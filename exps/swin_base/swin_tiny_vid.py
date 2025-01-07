@@ -9,10 +9,10 @@ class Exp(MyExp):
     def __init__(self):
         super(Exp, self).__init__()
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
-        self.data_dir = '/mnt/weka/scratch/yuheng.shi/dataset/VID' #'/mnt/weka/scratch/datasets/coco' #
-        self.train_ann = "vid_train_coco.json"
+        self.data_dir = '/shared/vision/dataset/' #'/mnt/weka/scratch/datasets/coco' #
+        self.train_ann = "metadata/v7/subsample_10_percent/train_annotations_coco_fmt.json"
         # name of annotation file for evaluation
-        self.val_ann = "vid_val10000_coco.json"
+        self.val_ann = "metadata/v7/subsample_10_percent/val_annotations_coco_fmt.json"
         #self.val_ann = "vid_val10000_coco_fg.json"
         self.basic_lr_per_img = 0.0005 / 64.0
         self.save_history_ckpt = False
@@ -22,7 +22,7 @@ class Exp(MyExp):
         self.eval_interval = 1
         self.warmup_epochs = 1
         self.no_aug_epochs = 7
-        self.num_classes = 30
+        self.num_classes = 16
         self.test_conf = 0.001
         self.train_name = ''
         self.val_name = ''
