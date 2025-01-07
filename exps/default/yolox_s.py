@@ -18,7 +18,7 @@ class Exp(MyExp):
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
 
         # Define yourself dataset path
-        self.data_dir = '/shared/vision/dataset/' #'/mnt/weka/scratch/datasets/coco' #
+        self.data_dir = "/shared/vision/dataset/"
         self.train_ann = "metadata/v7/subsample_10_percent/train_annotations_coco_fmt.json"
         self.val_ann = "metadata/v7/subsample_10_percent/val_annotations_coco_fmt.json"
 
@@ -28,3 +28,5 @@ class Exp(MyExp):
         self.eval_interval = 1
         self.warmup_epochs = 1
         self.no_aug_epochs = 7
+        self.train_name = ''
+        self.val_name = ''

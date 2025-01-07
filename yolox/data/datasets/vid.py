@@ -4,7 +4,7 @@
 import copy
 import os
 import random
-
+import json
 import numpy
 from loguru import logger
 
@@ -16,6 +16,8 @@ from torch.utils.data.sampler import Sampler,BatchSampler,SequentialSampler
 from xml.dom import minidom
 import math
 from yolox.utils import xyxy2cxcywh
+from pycocotools.coco import COCO
+from yolox.data.datasets.coco import remove_useless_info
 
 IMAGE_EXT = [".jpg", ".jpeg", ".webp", ".bmp", ".png",".JPEG"]
 XML_EXT = [".xml"]

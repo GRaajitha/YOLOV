@@ -2,6 +2,7 @@ from torch import nn
 from .network_blocks import BaseConv, ResNetBottleneck
 
 ResNet_cfg = {
+    18: [2, 2, 2, 2],
     50: [3, 4, 6, 3],
     101: [3, 4, 23, 3],
     152: [3, 8, 36, 3],
