@@ -48,6 +48,8 @@ class Exp(BaseExp):
         self.val_name = "val2017"
         #
         self.train_name = "train2017"
+        # 
+        self.data_shuffle = False
 
         # --------------- transform config ----------------- #
         # prob of applying mosaic aug
@@ -191,7 +193,7 @@ class Exp(BaseExp):
             mosaic=not no_aug,
         )
 
-        dataloader_kwargs = {"num_workers": self.data_num_workers, "pin_memory": True}
+        dataloader_kwargs = {"num_workers": self.data_num_workers, "pin_memory": True, "shuffle": self.data_shuffle}
         dataloader_kwargs["batch_sampler"] = batch_sampler
 
         # Make sure each process has different random seed, especially for 'fork' method.

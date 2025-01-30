@@ -5,9 +5,8 @@ import torch
 sys.path.append("..")
 from exps.yolov.yolov_base import Exp as MyExp
 from loguru import logger
-from yolox.data.datasets import vid
-from yolox.data.data_augment import Vid_Val_Transform
-from datetime import date
+
+#notes: ref to its base version
 class Exp(MyExp):
     def __init__(self):
         super(Exp, self).__init__()
@@ -26,7 +25,6 @@ class Exp(MyExp):
         self.vid_train_path = '/shared/users/raajitha/YOLOVexperiments/data/train_seq.npy'
         self.vid_val_path = './shared/users/raajitha/YOLOVexperiments/data/val_seq.npy'
 
-        self.basic_lr_per_img = 0.0005/16
         self.warmup_epochs = 0
         self.no_aug_epochs = 2
         self.pre_no_aug = 2
@@ -35,20 +33,19 @@ class Exp(MyExp):
         self.lmode = False
         self.lframe = 0
         self.lframe_val = 0
-        self.gframe = 4
-        self.gframe_val = 8 #config your gframe_val and gframe here
+        self.gframe = 16
+        self.gframe_val = 32
         self.use_loc_emd = False
         self.iou_base = False
         self.reconf = True
         self.loc_fuse_type = 'identity'
-        self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/yolov++_swintiny_640inp_zipline_{date.today()}"
+        self.output_dir = "./V++_outputs"
         self.stem_lr_ratio = 0.1
         self.ota_mode = True
         self.use_pre_nms = False
         self.cat_ota_fg = False
         self.agg_type='msa'
-        self.minimal_limit = 1
-        self.maximal_limit = 50
+        self.minimal_limit = 50
         self.conf_sim_thresh = 0.99
         self.decouple_reg = True
 
@@ -64,7 +61,6 @@ class Exp(MyExp):
             if self.backbone_name == 'Swin_Tiny':
                 in_channels = [192, 384, 768]
                 out_channels = [192, 384, 768]
-                print("HERE 1")
                 backbone = YOLOPAFPN_Swin(in_channels=in_channels,
                                           out_channels=out_channels,
                                           act=self.act,
@@ -193,39 +189,3 @@ class Exp(MyExp):
 
         return self.optimizer
 
-
-    def get_data_loader(
-            self, batch_size, is_distributed, no_aug=False, cache_img=False
-    ):
-        from yolox.data import TrainTransform
-        dataset = vid.OVIS(   #change to your own dataset
-                            img_size=self.input_size,
-                            preproc=TrainTransform(
-                                max_labels=50,
-                                flip_prob=self.flip_prob,
-                                hsv_prob=self.hsv_prob),
-                            mode='random',
-                            lframe=0,
-                            gframe=batch_size,
-                            data_dir=self.data_dir,
-                            name='train',  #change to your own dir name
-                            COCO_anno=os.path.join(self.data_dir, self.train_ann))
-
-        dataset = vid.get_trans_loader(batch_size=batch_size, data_num_workers=4, dataset=dataset)
-        return dataset
-
-    def get_eval_loader(self, batch_size,  tnum=None, data_num_workers=8, formal=False):
-
-        assert batch_size == self.lframe_val+self.gframe_val
-        dataset_val = vid.OVIS(data_dir=self.data_dir, #change to your own dataset
-                               img_size=self.test_size,
-                               mode='random',
-                               COCO_anno=os.path.join(self.data_dir, self.val_ann),
-                               name='val', #change to your own dir name
-                               lframe=self.lframe_val,
-                               gframe=self.gframe_val,
-                               preproc=Vid_Val_Transform()
-                               )
-
-        val_loader = vid.get_trans_loader(batch_size=batch_size, data_num_workers=data_num_workers, dataset=dataset_val)
-        return val_loader

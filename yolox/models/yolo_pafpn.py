@@ -140,6 +140,7 @@ class YOLOPAFPN_Swin(nn.Module):
         window_size = 7,
     ):
         super().__init__()
+        print("HERE 2")
         self.backbone = SwinTransformer(out_indices=in_features,depths=swin_depth,num_heads=num_heads,
                                         embed_dim=base_dim,pretrain_img_size=pretrain_img_size,ape=ape,window_size=window_size)
         self.in_features = in_features

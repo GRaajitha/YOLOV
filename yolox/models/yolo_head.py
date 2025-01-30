@@ -626,12 +626,15 @@ class YOLOXHead(nn.Module):
         # Dynamic K
         # ---------------------------------------------------------------
         matching_matrix = torch.zeros_like(cost, dtype=torch.uint8)
-
         ious_in_boxes_matrix = pair_wise_ious
         n_candidate_k = min(10, ious_in_boxes_matrix.size(1))
         topk_ious, _ = torch.topk(ious_in_boxes_matrix, n_candidate_k, dim=1)
         dynamic_ks = torch.clamp(topk_ious.sum(1).int(), min=1)
-        dynamic_ks = dynamic_ks.tolist()
+        try:
+            dynamic_ks = dynamic_ks.tolist()
+        except:
+            print(f"cost shape: {cost.shape}, pair_wise_ious shape: {pair_wise_ious.shape}, gt_classes shape: {gt_classes.shape}, gt_classes: {gt_classes}, num_gt: {num_gt}, fg_mask shape: {fg_mask.shape}")
+            print(f"dynamic_ks: {dynamic_ks}, gt_classes: {gt_classes}")
         for gt_idx in range(num_gt):
             _, pos_idx = torch.topk(
                 cost[gt_idx], k=dynamic_ks[gt_idx], largest=False

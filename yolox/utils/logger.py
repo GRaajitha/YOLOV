@@ -56,6 +56,13 @@ class StreamToLoguru:
     def flush(self):
         pass
 
+    def isatty(self):
+        """
+        Returns whether the stream is connected to a terminal.
+        This implementation always returns False since it's a redirection.
+        """
+        return False
+
 
 def redirect_sys_output(log_level="INFO"):
     redirect_logger = StreamToLoguru(log_level)
@@ -214,4 +221,5 @@ class WandbLogger(object):
         self.run.log_artifact(artifact, aliases=aliases)
 
     def finish(self):
-        self.run.finish()
+        if self.run:
+            self.wandb.finish()

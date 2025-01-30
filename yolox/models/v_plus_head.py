@@ -968,6 +968,8 @@ class YOLOVHead(nn.Module):
         Returns:
             [batch,topK,5+clsnum]
         '''
+        # import pdb
+        # pdb.set_trace()
         box_corner = prediction.new(prediction.shape)
         box_corner[:, :, 0] = prediction[:, :, 0] - prediction[:, :, 2] / 2
         box_corner[:, :, 1] = prediction[:, :, 1] - prediction[:, :, 3] / 2
@@ -1079,11 +1081,13 @@ class YOLOVHead(nn.Module):
 
             detections = detections[nms_out_index]
 
+            # pdb.set_trace()
             if output[i] is None:
                 output[i] = detections
             else:
                 output[i] = torch.cat((output[i], detections))
 
+            # pdb.set_trace()
             if output_index[i] is None:
                 if self.kwargs.get('use_pre_nms',True):
                     output_index[i] = conf_idx[nms_out_index]

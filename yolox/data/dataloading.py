@@ -42,6 +42,7 @@ class DataLoader(torchDataLoader):
         self.__initialized = False
         shuffle = False
         batch_sampler = None
+        sampler = None
         if len(args) > 5:
             shuffle = args[2]
             sampler = args[3]

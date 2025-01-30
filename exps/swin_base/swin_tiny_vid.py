@@ -3,22 +3,22 @@ import torch
 import torch.nn as nn
 
 from yolox.exp import Exp as MyExp
-
+from datetime import date
 
 class Exp(MyExp):
     def __init__(self):
         super(Exp, self).__init__()
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
-        self.data_dir = '/shared/vision/dataset/' #'/mnt/weka/scratch/datasets/coco' #
-        self.train_ann = "metadata/v7/subsample_10_percent/train_annotations_coco_fmt.json"
-        # name of annotation file for evaluation
-        self.val_ann = "metadata/v7/subsample_10_percent/val_annotations_coco_fmt.json"
-        #self.val_ann = "vid_val10000_coco_fg.json"
-        self.basic_lr_per_img = 0.0005 / 64.0
+        self.data_dir = '/shared/vision/dataset/'
+        self.train_ann = "metadata/v7/subsample_10_percent_shuffled/train_annotations_coco_fmt.json"
+        self.val_ann = "metadata/v7/subsample_10_percent_shuffled/val_annotations_coco_fmt.json"
+        self.test_ann = "metadata/v7/subsample_10_percent_shuffled/test_annotations_coco_fmt.json"
+        self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/yolox_swintiny_2kinp_zipline_{date.today()}"
+        self.basic_lr_per_img = 0.0005 / 32.0
         self.save_history_ckpt = False
         self.max_epoch = 15
-        self.input_size = (640,640)
-        self.test_size = (640,640)
+        self.input_size = (1920,1920)
+        self.test_size = (1920,1920)
         self.eval_interval = 1
         self.warmup_epochs = 1
         self.no_aug_epochs = 7
@@ -26,6 +26,9 @@ class Exp(MyExp):
         self.test_conf = 0.001
         self.train_name = ''
         self.val_name = ''
+        self.mosaic_scale = (0.1, 2)
+        self.enable_mixup = False
+
     def get_model(self):
         def init_yolo(M):
             for m in M.modules():

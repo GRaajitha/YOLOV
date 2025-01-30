@@ -6,6 +6,8 @@ sys.path.append("..")
 from exps.yolov.yolov_base import Exp as MyExp
 from loguru import logger
 from yolox.data.datasets import vid
+from datetime import date
+from yolox.data.data_augment import Vid_Val_Transform
 
 class Exp(MyExp):
     def __init__(self):
@@ -15,10 +17,15 @@ class Exp(MyExp):
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
 
         # Define yourself dataset path
+        self.num_classes = 16
         self.data_dir = "/shared/users/raajitha/YOLOVexperiments/data" #set your dataset path
-        self.train_ann = "ovis_vid_train.josn" #set your train annotation file
-        self.val_ann = "ovis_vid_val.josn" #set your val annotation file
-        
+        self.train_ann = "ovis_train.json" #set your train annotation file
+        self.val_ann = "ovis_val.json" #set your val annotation file
+        self.test_ann = "ovis_test.json" #set your test annotation file
+        self.input_size = (1920, 1920)
+        self.test_size = (1920, 1920)
+        self.vid_train_path = '/shared/users/raajitha/YOLOVexperiments/data/train_seq.npy'
+        self.vid_val_path = './shared/users/raajitha/YOLOVexperiments/data/val_seq.npy'
 
         self.warmup_epochs = 0
         self.no_aug_epochs = 2
@@ -28,13 +35,13 @@ class Exp(MyExp):
         self.lmode = False
         self.lframe = 0
         self.lframe_val = 0
-        self.gframe = 16
-        self.gframe_val = 32
+        self.gframe = 8
+        self.gframe_val = 16
         self.use_loc_emd = False
         self.iou_base = False
         self.reconf = True
         self.loc_fuse_type = 'identity'
-        self.output_dir = "./V++_outputs"
+        self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/yolovs_ovis_zipline_{date.today()}"
         self.stem_lr_ratio = 0.1
         self.ota_mode = True
 
