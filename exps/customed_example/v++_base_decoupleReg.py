@@ -5,28 +5,17 @@ import torch
 sys.path.append("..")
 from exps.yolov.yolov_base import Exp as MyExp
 from loguru import logger
-from yolox.data.datasets import vid
-from yolox.data.data_augment import Vid_Val_Transform
-from datetime import date
+
+#exp after OTA_VID_woRegScore, exp 8 in the doc, decouple the reg and cls refinement
 class Exp(MyExp):
     def __init__(self):
         super(Exp, self).__init__()
-        self.depth = 1.0
-        self.width = 1.0
+        self.depth = 0.33  # 1#0.67
+        self.width = 0.5  # 1#0.75
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
-        self.backbone_name = 'Swin_Tiny'
-        # Define yourself dataset path
-        self.num_classes = 16  
-        self.data_dir = "/shared/users/raajitha/YOLOVexperiments/data"
-        self.train_ann = "ovis_train.json"
-        self.val_ann = "ovis_val.json"
-        self.test_ann = "ovis_test.json"
-        self.input_size = (640, 640)
-        self.test_size = (640, 640)
-        self.vid_train_path = '/shared/users/raajitha/YOLOVexperiments/data/train_seq.npy'
-        self.vid_val_path = '/shared/users/raajitha/YOLOVexperiments/data/val_seq.npy'
 
-        self.basic_lr_per_img = 0.0005/16
+        # Define yourself dataset path
+
         self.warmup_epochs = 0
         self.no_aug_epochs = 2
         self.pre_no_aug = 2
@@ -35,21 +24,20 @@ class Exp(MyExp):
         self.lmode = False
         self.lframe = 0
         self.lframe_val = 0
-        self.gframe = 4
-        self.gframe_val = 8 #config your gframe_val and gframe here
+        self.gframe = 16
+        self.gframe_val = 32
         self.use_loc_emd = False
         self.iou_base = False
         self.reconf = True
         self.loc_fuse_type = 'identity'
-        self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/yolov++_swintiny_640inp_zipline_{date.today()}"
+        self.output_dir = "./V++_outputs"
         self.stem_lr_ratio = 0.1
         self.ota_mode = True
+        #check pre_nms for testing when use_pre_nms is False in training: Result: AP50 drop 3.0
         self.use_pre_nms = False
         self.cat_ota_fg = False
         self.agg_type='msa'
-        self.minimal_limit = 1
-        self.maximal_limit = 50
-        self.conf_sim_thresh = 0.99
+        self.minimal_limit = 0
         self.decouple_reg = True
 
     def get_model(self):
@@ -122,12 +110,11 @@ class Exp(MyExp):
         more_args = {'use_ffn': self.use_ffn, 'use_time_emd': self.use_time_emd, 'use_loc_emd': self.use_loc_emd,
                      'loc_fuse_type': self.loc_fuse_type, 'use_qkv': self.use_qkv,
                      'local_mask': self.local_mask, 'local_mask_branch': self.local_mask_branch,
-                     'pure_pos_emb': self.pure_pos_emb, 'loc_conf': self.loc_conf, 'iou_base': self.iou_base,
-                     'reconf': self.reconf, 'ota_mode': self.ota_mode, 'ota_cls': self.ota_cls,
-                     'traj_linking': self.traj_linking,
-                     'iou_window': self.iou_window, 'globalBlocks': self.globalBlocks, 'use_pre_nms': self.use_pre_nms,
-                     'cat_ota_fg': self.cat_ota_fg, 'agg_type': self.agg_type, 'minimal_limit': self.minimal_limit,
-                     'conf_sim_thresh': self.conf_sim_thresh, 'decouple_reg':self.decouple_reg,
+                     'pure_pos_emb':self.pure_pos_emb,'loc_conf':self.loc_conf,'iou_base':self.iou_base,
+                     'reconf':self.reconf,'ota_mode':self.ota_mode,'ota_cls':self.ota_cls,'traj_linking':self.traj_linking,
+                     'iou_window':self.iou_window,'globalBlocks':self.globalBlocks,'use_pre_nms':self.use_pre_nms,
+                     'cat_ota_fg':self.cat_ota_fg, 'agg_type':self.agg_type,'minimal_limit':self.minimal_limit,
+                     'decouple_reg':self.decouple_reg,
                      }
         head = YOLOVHead(self.num_classes, self.width, in_channels=in_channels, heads=self.head, drop=self.drop_rate,
                          use_score=self.use_score, defualt_p=self.defualt_p, sim_thresh=self.sim_thresh,
@@ -192,39 +179,3 @@ class Exp(MyExp):
 
         return self.optimizer
 
-
-    def get_data_loader(
-            self, batch_size, is_distributed, no_aug=False, cache_img=False
-    ):
-        from yolox.data import TrainTransform
-        dataset = vid.OVIS(   #change to your own dataset
-                            img_size=self.input_size,
-                            preproc=TrainTransform(
-                                max_labels=50,
-                                flip_prob=self.flip_prob,
-                                hsv_prob=self.hsv_prob),
-                            mode='random',
-                            lframe=0,
-                            gframe=batch_size,
-                            data_dir=self.data_dir,
-                            name='train',  #change to your own dir name
-                            COCO_anno=os.path.join(self.data_dir, self.train_ann))
-
-        dataset = vid.get_trans_loader(batch_size=batch_size, data_num_workers=4, dataset=dataset)
-        return dataset
-
-    def get_eval_loader(self, batch_size,  tnum=None, data_num_workers=8, formal=False):
-
-        assert batch_size == self.lframe_val+self.gframe_val
-        dataset_val = vid.OVIS(data_dir=self.data_dir, #change to your own dataset
-                               img_size=self.test_size,
-                               mode='random',
-                               COCO_anno=os.path.join(self.data_dir, self.val_ann),
-                               name='val', #change to your own dir name
-                               lframe=self.lframe_val,
-                               gframe=self.gframe_val,
-                               preproc=Vid_Val_Transform()
-                               )
-
-        val_loader = vid.get_trans_loader(batch_size=batch_size, data_num_workers=data_num_workers, dataset=dataset_val)
-        return val_loader

@@ -307,7 +307,7 @@ class Trainer:
             if self.args.ckpt is not None:
                 logger.info("loading checkpoint for fine tuning")
                 ckpt_file = self.args.ckpt
-                ckpt = torch.load(ckpt_file, map_location=self.device)["model"]
+                ckpt = torch.load(ckpt_file, map_location=self.device, weights_only=False)["model"]
                 model = load_ckpt(model, ckpt)
             self.start_epoch = 0
 

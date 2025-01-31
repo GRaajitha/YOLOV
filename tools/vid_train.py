@@ -103,16 +103,13 @@ def main(exp, args):
             "which can slow down your training considerably! You may see unexpected behavior "
             "when restarting from checkpoints."
         )
-    print("HERE 2 IN VID_TRAIN")
     # set environment variables for distributed training
     configure_nccl()
     configure_omp()
     cudnn.benchmark = True
-    print("HERE 3 IN VID_TRAIN")
     lframe = int(exp.lframe_val)
     gframe = int(exp.gframe_val)
     val_loader = exp.get_eval_loader(batch_size=lframe+gframe,data_num_workers=6)
-    print("HERE 4 IN VID_TRAIN")
     trainer = Trainer(exp, args,val_loader,val=False)
     trainer.train()
 
@@ -120,7 +117,6 @@ def main(exp, args):
 if __name__ == "__main__":
     args = make_parser().parse_args()
     exp = get_exp(args.exp_file, args.name)
-    print("HERE 1 IN VID_TRAIN")
 
     exp.merge(args.opts)
     exp.test_size = (args.tsize, args.tsize)

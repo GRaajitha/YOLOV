@@ -2,18 +2,25 @@ import os
 import torch
 import torch.nn as nn
 from yolox.exp import Exp as MyExp
-
+from datetime import date
 
 class Exp(MyExp):
     def __init__(self):
         super(Exp, self).__init__()
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
-        self.data_dir = ''
+        self.data_dir = '/shared/vision/dataset/'
+        self.train_ann = "metadata/v7/subsample_10_percent_shuffled/train_annotations_coco_fmt.json"
+        self.val_ann = "metadata/v7/subsample_10_percent_shuffled/val_annotations_coco_fmt.json"
+        self.test_ann = "metadata/v7/subsample_10_percent_shuffled/test_annotations_coco_fmt.json"
+        self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/yolox_swin_tiny_base_640inp_{date.today()}"
+        self.num_classes = 16
+        self.train_name = ''
+        self.val_name = ''
         self.basic_lr_per_img = 0.0001 / 18.0
         self.save_history_ckpt = False
         self.min_lr_ratio = 0.01
         self.weight_decay = 0.05
-        self.max_epoch = 100
+        self.max_epoch = 50
         self.warmup_epochs = 1
         self.eval_interval = 5
         self.no_aug_epochs = 10

@@ -17,6 +17,7 @@ from yolox.data.datasets.vid import DataPrefetcher
 from yolox.utils import (
     MeterBuffer,
     ModelEMA,
+    WandbLogger,
     all_reduce_norm,
     get_local_rank,
     get_model_info,
@@ -81,6 +82,8 @@ class Trainer:
         # before_train methods.
         self.exp = exp
         self.args = args
+        self.args.logger = "wandb"
+        self.args.resume = False
         #self.prefetcher = vid.DataPrefetcher(train_loader)
         #self.train_loader = train_loader
         self.val_loader = val_loader
@@ -225,8 +228,16 @@ class Trainer:
         )
         # Tensorboard logger
         if self.rank == 0:
-            #if self.args.logger == "tensorboard":
-            self.tblogger = SummaryWriter(os.path.join(self.file_name, "tensorboard"))
+            if self.args.logger == "tensorboard":
+                self.tblogger = SummaryWriter(os.path.join(self.file_name, "tensorboard"))
+            elif self.args.logger == "wandb":
+                wandb_params = dict()
+                for k, v in zip(self.args.opts[0::2], self.args.opts[1::2]):
+                    if k.startswith("wandb-"):
+                        wandb_params.update({k.lstrip("wandb-"): v})
+                self.wandb_logger = WandbLogger(config=vars(self.exp), **wandb_params)
+            else:
+                raise ValueError("logger must be either 'tensorboard' or 'wandb'")
 
         logger.info("Training start...")
         logger.info("\n{}".format(model))
@@ -235,6 +246,8 @@ class Trainer:
         logger.info(
             "Training of experiment is done and the best AP is {:.2f}".format(self.best_ap * 100)
         )
+        if self.rank == 0 and self.args.logger == "wandb":
+            self.wandb_logger.finish()
 
     def before_epoch(self):
         logger.info("---> start train epoch{}".format(self.epoch + 1))
@@ -315,6 +328,11 @@ class Trainer:
                 )
                 + (", size: {:d}, {}".format(self.input_size[0], eta_str))
             )
+
+            if self.rank == 0 and self.args.logger == "wandb":
+                self.wandb_logger.log_metrics({k: v.latest for k, v in loss_meter.items()})
+                self.wandb_logger.log_metrics({"lr": self.meter["lr"].latest})
+
             self.meter.clear_meters()
 
         # random resizing
@@ -337,7 +355,7 @@ class Trainer:
             else:
                 ckpt_file = self.args.ckpt
 
-            ckpt = torch.load(ckpt_file, map_location=self.device)
+            ckpt = torch.load(ckpt_file, map_location=self.device, weights_only=False)
             # resume the model/optimizer state dict
             model.load_state_dict(ckpt["model"])
             self.optimizer.load_state_dict(ckpt["optimizer"])
@@ -384,12 +402,16 @@ class Trainer:
         summary_info = summary[-1]
         detail_info = extract_values(summary_info)
         if self.rank == 0:
-            self.tblogger.add_scalar("val/COCOAP50", ap50, self.epoch + 1)
-            self.tblogger.add_scalar("val/COCOAP50_95", ap50_95, self.epoch + 1)
-            for k, v in detail_info.items():
-                self.tblogger.add_scalar("val/{}".format(k), v, self.epoch + 1)
-            self.tblogger.add_scalar("lr", self.lr, self.epoch + 1)
-            logger.info('\n'+ str(summary[-1]))
+            if self.args.logger == "tensorboard":
+                self.tblogger.add_scalar("val/COCOAP50", ap50, self.epoch + 1)
+                self.tblogger.add_scalar("val/COCOAP50_95", ap50_95, self.epoch + 1)
+            if self.args.logger == "wandb":
+                self.wandb_logger.log_metrics({
+                    "val/COCOAP50": ap50,
+                    "val/COCOAP50_95": ap50_95,
+                    "epoch": self.epoch + 1,
+                })
+            logger.info("\n" + summary)
 
         synchronize()
 
@@ -438,3 +460,6 @@ class Trainer:
                 self.file_name,
                 ckpt_name,
             )
+
+            if self.args.logger == "wandb":
+                self.wandb_logger.save_checkpoint(self.file_name, ckpt_name, update_best_ckpt)

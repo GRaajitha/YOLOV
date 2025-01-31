@@ -23,7 +23,7 @@ class Exp(MyExp):
         self.input_size = (640, 640)
         self.test_size = (640, 640)
         self.vid_train_path = '/shared/users/raajitha/YOLOVexperiments/data/train_seq.npy'
-        self.vid_val_path = './shared/users/raajitha/YOLOVexperiments/data/val_seq.npy'
+        self.vid_val_path = '/shared/users/raajitha/YOLOVexperiments/data/val_seq.npy'
 
         self.warmup_epochs = 0
         self.no_aug_epochs = 2
