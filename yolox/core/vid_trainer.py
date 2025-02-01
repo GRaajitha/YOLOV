@@ -375,7 +375,7 @@ class Trainer:
             if self.args.ckpt is not None:
                 logger.info("loading checkpoint for fine tuning")
                 ckpt_file = self.args.ckpt
-                ckpt = torch.load(ckpt_file, map_location=self.device)["model"]
+                ckpt = torch.load(ckpt_file, map_location=self.device, weights_only=False)["model"]
                 model = load_ckpt(model, ckpt)
             self.start_epoch = 0
 
@@ -411,7 +411,7 @@ class Trainer:
                     "val/COCOAP50_95": ap50_95,
                     "epoch": self.epoch + 1,
                 })
-            logger.info("\n" + summary)
+            logger.info("\n" + str(summary))
 
         synchronize()
 

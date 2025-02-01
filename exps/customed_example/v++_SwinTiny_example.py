@@ -17,14 +17,14 @@ class Exp(MyExp):
         self.backbone_name = 'Swin_Tiny'
         # Define yourself dataset path
         self.num_classes = 16  
-        self.data_dir = "/shared/users/raajitha/YOLOVexperiments/data"
-        self.train_ann = "ovis_train.json"
-        self.val_ann = "ovis_val.json"
-        self.test_ann = "ovis_test.json"
-        self.input_size = (640, 640)
-        self.test_size = (640, 640)
-        self.vid_train_path = '/shared/users/raajitha/YOLOVexperiments/data/train_seq.npy'
-        self.vid_val_path = '/shared/users/raajitha/YOLOVexperiments/data/val_seq.npy'
+        self.data_dir = "/shared/vision/dataset/"
+        self.train_ann = "metadata/ovis_v7/ovis_train.json"
+        self.val_ann = "metadata/ovis_v7/ovis_val.json"
+        self.test_ann = "metadata/ovis_v7/ovis_test.json"
+        self.input_size = (1920, 1920)
+        self.test_size = (1920, 1920)
+        self.vid_train_path = '/shared/vision/dataset/metadata/ovis_v7/train_seq.npy'
+        self.vid_val_path = '/shared/vision/dataset/metadata/ovis_v7/val_seq.npy'
 
         self.basic_lr_per_img = 0.0005/16
         self.warmup_epochs = 0
@@ -41,7 +41,8 @@ class Exp(MyExp):
         self.iou_base = False
         self.reconf = True
         self.loc_fuse_type = 'identity'
-        self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/yolov++_swintiny_640inp_zipline_{date.today()}"
+        self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/yolov++_swin_2Kinp_V7_{date.today()}"
+        # self.output_dir = "./V++_Outputs"
         self.stem_lr_ratio = 0.1
         self.ota_mode = True
         self.use_pre_nms = False

@@ -245,6 +245,9 @@ def convert_ovis_coco(data_dir = '/opt/dataset/OVIS/annotations_train.json',save
     ovis_vid['info'] = ovis['info']
     ovis_vid['categories'] = ovis['categories']
     # ovis_vid['licenses'] = ovis['licenses']
+    # uncomment to create tiny dataset
+    # subset_videos = ovis['videos'][:2]
+    # subset_videos_ids = [vid["id"] for vid in subset_videos]
     ovis_vid['videos'] = ovis['videos']
     ovis_vid['images'] = []
     ovis_vid['annotations'] = []
@@ -266,6 +269,9 @@ def convert_ovis_coco(data_dir = '/opt/dataset/OVIS/annotations_train.json',save
             id += 1
     id = 0
     for anno in ovis['annotations']:
+        # uncomment to create a tiny dataset
+        # if anno['video_id'] not in subset_videos_ids:
+        #     continue
         for i in range(len(anno['bboxes'])):
             if anno['bboxes'][i] != None:
                 tmp_dic = {
@@ -282,4 +288,6 @@ def convert_ovis_coco(data_dir = '/opt/dataset/OVIS/annotations_train.json',save
                 ovis_vid['annotations'].append(tmp_dic)
     json.dump(ovis_vid,open(save_dir,'w+'))
     print('done')
-#convert_ovis_coco()
+convert_ovis_coco(data_dir="/shared/vision/dataset/metadata/ovis_v7/vid_annotations_train.json", save_dir="/shared/vision/dataset/metadata/ovis_v7/tiny_ovis_train.json")
+convert_ovis_coco(data_dir="/shared/vision/dataset/metadata/ovis_v7/vid_annotations_val.json", save_dir="/shared/vision/dataset/metadata/ovis_v7/tiny_ovis_val.json")
+convert_ovis_coco(data_dir="/shared/vision/dataset/metadata/ovis_v7/vid_annotations_test.json", save_dir="/shared/vision/dataset/metadata/ovis_v7/tiny_ovis_test.json")

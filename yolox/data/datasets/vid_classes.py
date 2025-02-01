@@ -1,12 +1,20 @@
 VID_classes = (
-    'airplane', 'antelope', 'bear', 'bicycle',
-    'bird', 'bus', 'car', 'cattle',
-    'dog', 'domestic_cat', 'elephant', 'fox',
-    'giant_panda', 'hamster', 'horse', 'lion',
-    'lizard', 'monkey', 'motorcycle', 'rabbit',
-    'red_panda', 'sheep', 'snake', 'squirrel',
-    'tiger', 'train', 'turtle', 'watercraft',
-    'whale', 'zebra'
+    "Airborne", 
+    "Zip", 
+    "Glider", 
+    "Balloon", 
+    "Paraglider", 
+    "Bird", 
+    "Flock", 
+    "Airplane", 
+    "Ultralight", 
+    "Helicopter", 
+    "Unknown", 
+    "HangGlider",
+    "CommercialAirliner",
+    "Drone",
+    "Artificial", 
+    "Natural"
 )
 
 Epic_classes = (
