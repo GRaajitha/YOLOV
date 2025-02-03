@@ -124,7 +124,7 @@ if __name__ == "__main__":
         args.experiment_name = exp.exp_name
 
     num_gpu = get_num_devices() if args.devices is None else args.devices
-    print(num_gpu)
+
     assert num_gpu <= get_num_devices()
     args.machine_rank = 1
     dist_url = "auto" if args.dist_url is None else args.dist_url
