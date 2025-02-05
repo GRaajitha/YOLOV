@@ -213,7 +213,7 @@ class Trainer:
             occupy_mem(self.local_rank)
 
         if self.is_distributed:
-            model = DDP(model, device_ids=[self.local_rank], broadcast_buffers=False)
+            model = DDP(model, device_ids=[self.local_rank], broadcast_buffers=False, find_unused_parameters=True)
 
         if self.use_model_ema:
             self.ema_model = ModelEMA(model, 0.9998)
@@ -400,8 +400,8 @@ class Trainer:
         ap50 = summary[1]
 
         summary_info = summary[-1]
-        detail_info = extract_values(summary_info)
         if self.rank == 0:
+            # detail_info = extract_values(summary_info)
             if self.args.logger == "tensorboard":
                 self.tblogger.add_scalar("val/COCOAP50", ap50, self.epoch + 1)
                 self.tblogger.add_scalar("val/COCOAP50_95", ap50_95, self.epoch + 1)
@@ -414,7 +414,6 @@ class Trainer:
             logger.info("\n" + str(summary))
 
         synchronize()
-
         self.save_ckpt("last_epoch", ap50_95 > self.best_ap)
         self.best_ap = max(self.best_ap, ap50_95)
 

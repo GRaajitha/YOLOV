@@ -26,7 +26,7 @@ class Exp(MyExp):
         self.vid_train_path = '/shared/vision/dataset/metadata/ovis_v7/train_seq.npy'
         self.vid_val_path = '/shared/vision/dataset/metadata/ovis_v7/val_seq.npy'
 
-        self.basic_lr_per_img = 0.0005/16
+        self.basic_lr_per_img = 0.0005 / 16
         self.warmup_epochs = 0
         self.no_aug_epochs = 2
         self.pre_no_aug = 2
@@ -35,13 +35,13 @@ class Exp(MyExp):
         self.lmode = False
         self.lframe = 0
         self.lframe_val = 0
-        self.gframe = 4
-        self.gframe_val = 8 #config your gframe_val and gframe here
+        self.gframe = 16
+        self.gframe_val = 32 #config your gframe_val and gframe here
         self.use_loc_emd = False
         self.iou_base = False
         self.reconf = True
         self.loc_fuse_type = 'identity'
-        self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/yolov++_swin_2Kinp_V7_{date.today()}"
+        self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/yolov++_swin_8gpu_2kinp_ovis_v7_{date.today()}"
         # self.output_dir = "./V++_Outputs"
         self.stem_lr_ratio = 0.1
         self.ota_mode = True

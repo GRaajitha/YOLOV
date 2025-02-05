@@ -363,19 +363,19 @@ class VIDEvaluator:
 
             _, tmp = tempfile.mkstemp()
             if ori:
-                json.dump(self.vid_to_coco_ori, open(self.gt_ori, 'w'))
-                json.dump(data_dict, open(self.tmp_name_ori, 'w'))
-                json.dump(self.vid_to_coco_ori, open(tmp, "w"))
+                json.dump(self.vid_to_coco_ori, open(self.gt_ori, 'w'), indent=4)
+                json.dump(data_dict, open(self.tmp_name_ori, 'w'), indent=4)
+                json.dump(self.vid_to_coco_ori, open(tmp, "w"), indent=4)
             else:
-                json.dump(self.vid_to_coco, open(self.gt_refined, 'w'))
-                json.dump(data_dict, open(self.tmp_name_refined, 'w'))
-                json.dump(self.vid_to_coco, open(tmp, "w"))
+                json.dump(self.vid_to_coco, open(self.gt_refined, 'w'), indent=4)
+                json.dump(data_dict, open(self.tmp_name_refined, 'w'), indent=4)
+                json.dump(self.vid_to_coco, open(tmp, "w"), indent=4)
 
             cocoGt = pycocotools.coco.COCO(tmp)
             # TODO: since pycocotools can't process dict in py36, write data to json file.
 
             _, tmp = tempfile.mkstemp()
-            json.dump(data_dict, open(tmp, "w"))
+            json.dump(data_dict, open(tmp, "w"), indent=4)
             cocoDt = cocoGt.loadRes(tmp)
             try:
                 from yolox.layers import COCOeval_opt as COCOeval
