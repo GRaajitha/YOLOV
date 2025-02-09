@@ -138,8 +138,8 @@ class Exp(BaseExp):
         # dir of dataset images, if data_dir is None, this project will use `datasets` dir
         self.data_dir = '/mnt/weka/scratch/yuheng.shi/dataset/VID'
         # name of annotation file for training
-        self.vid_train_path = './yolox/data/datasets/train_seq.npy'
-        self.vid_val_path = './yolox/data/datasets/val_seq.npy'
+        self.vid_train_path = ''
+        self.vid_val_path = ''
         # path to vid name list
 
         # --------------- transform config ----------------- #

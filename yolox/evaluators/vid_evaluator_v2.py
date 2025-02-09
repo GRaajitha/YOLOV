@@ -14,6 +14,7 @@ from tqdm import tqdm
 from yolox.evaluators.coco_evaluator import per_class_AR_table, per_class_AP_table
 import torch
 import pycocotools.coco
+import pdb
 
 from yolox.utils import (
     gather,
@@ -84,20 +85,22 @@ class VIDEvaluator:
                 'description': 'nothing',
             },
             'annotations': [],
-            'categories': [{'supercategory': 'none', 'id': 0, 'name': 'Airborne'}, 
-                           {'supercategory': 'none', 'id': 1, 'name': 'Zip'}, 
-                           {'supercategory': 'none', 'id': 2, 'name': 'Glider'}, 
-                           {'supercategory': 'none', 'id': 3, 'name': 'Balloon'}, 
-                           {'supercategory': 'none', 'id': 4, 'name': 'Paraglider'}, 
-                           {'supercategory': 'none', 'id': 5, 'name': 'Bird'}, 
-                           {'supercategory': 'none', 'id': 6, 'name': 'Flock'}, 
-                           {'supercategory': 'none', 'id': 7, 'name': 'Airplane'}, 
-                           {'supercategory': 'none', 'id': 8, 'name': 'Ultralight'}, 
-                           {'supercategory': 'none', 'id': 9, 'name': 'Helicopter'}, 
-                           {'supercategory': 'none', 'id': 10, 'name': 'Unknown'}, 
-                           {'supercategory': 'none', 'id': 11, 'name': 'HangGlider'}, 
-                           {'supercategory': 'none', 'id': 14, 'name': 'Artificial'}, 
-                           {'supercategory': 'none', 'id': 15, 'name': 'Natural'}],
+            'categories': [ {'supercategory': 'none', 'id': 0, 'name': 'Airborne'},
+                            {'supercategory': 'none', 'id': 1, 'name': 'Zip'},
+                            {'supercategory': 'none', 'id': 2, 'name': 'Glider'},
+                            {'supercategory': 'none', 'id': 3, 'name': 'Balloon'},
+                            {'supercategory': 'none', 'id': 4, 'name': 'Paraglider'},
+                            {'supercategory': 'none', 'id': 5, 'name': 'Bird'},
+                            {'supercategory': 'none', 'id': 6, 'name': 'Flock'},
+                            {'supercategory': 'none', 'id': 7, 'name': 'Airplane'},
+                            {'supercategory': 'none', 'id': 8, 'name': 'Ultralight'},
+                            {'supercategory': 'none', 'id': 9, 'name': 'Helicopter'},
+                            {'supercategory': 'none', 'id': 10, 'name': 'Unknown'},
+                            {'supercategory': 'none', 'id': 11, 'name': 'HangGlider'},
+                            {'supercategory': 'none', 'id': 12, 'name': 'CommercialAirliner'},
+                            {'supercategory': 'none', 'id': 13, 'name': 'Drone'},
+                            {'supercategory': 'none', 'id': 14, 'name': 'Artificial'},
+                            {'supercategory': 'none', 'id': 15, 'name': 'Natural'}],
             'images': [],
             'licenses': []
         }
@@ -106,20 +109,22 @@ class VIDEvaluator:
                 'description': 'nothing',
             },
             'annotations': [],
-            'categories': [{'supercategory': 'none', 'id': 0, 'name': 'Airborne'}, 
-                           {'supercategory': 'none', 'id': 1, 'name': 'Zip'}, 
-                           {'supercategory': 'none', 'id': 2, 'name': 'Glider'}, 
-                           {'supercategory': 'none', 'id': 3, 'name': 'Balloon'}, 
-                           {'supercategory': 'none', 'id': 4, 'name': 'Paraglider'}, 
-                           {'supercategory': 'none', 'id': 5, 'name': 'Bird'}, 
-                           {'supercategory': 'none', 'id': 6, 'name': 'Flock'}, 
-                           {'supercategory': 'none', 'id': 7, 'name': 'Airplane'}, 
-                           {'supercategory': 'none', 'id': 8, 'name': 'Ultralight'}, 
-                           {'supercategory': 'none', 'id': 9, 'name': 'Helicopter'}, 
-                           {'supercategory': 'none', 'id': 10, 'name': 'Unknown'}, 
-                           {'supercategory': 'none', 'id': 11, 'name': 'HangGlider'}, 
-                           {'supercategory': 'none', 'id': 14, 'name': 'Artificial'}, 
-                           {'supercategory': 'none', 'id': 15, 'name': 'Natural'}],
+            'categories': [ {'supercategory': 'none', 'id': 0, 'name': 'Airborne'},
+                            {'supercategory': 'none', 'id': 1, 'name': 'Zip'},
+                            {'supercategory': 'none', 'id': 2, 'name': 'Glider'},
+                            {'supercategory': 'none', 'id': 3, 'name': 'Balloon'},
+                            {'supercategory': 'none', 'id': 4, 'name': 'Paraglider'},
+                            {'supercategory': 'none', 'id': 5, 'name': 'Bird'},
+                            {'supercategory': 'none', 'id': 6, 'name': 'Flock'},
+                            {'supercategory': 'none', 'id': 7, 'name': 'Airplane'},
+                            {'supercategory': 'none', 'id': 8, 'name': 'Ultralight'},
+                            {'supercategory': 'none', 'id': 9, 'name': 'Helicopter'},
+                            {'supercategory': 'none', 'id': 10, 'name': 'Unknown'},
+                            {'supercategory': 'none', 'id': 11, 'name': 'HangGlider'},
+                            {'supercategory': 'none', 'id': 12, 'name': 'CommercialAirliner'},
+                            {'supercategory': 'none', 'id': 13, 'name': 'Drone'},
+                            {'supercategory': 'none', 'id': 14, 'name': 'Artificial'},
+                            {'supercategory': 'none', 'id': 15, 'name': 'Natural'}],
             'images': [],
             'licenses': []
         }
@@ -335,7 +340,7 @@ class VIDEvaluator:
     def evaluate_prediction(self, data_dict, statistics, ori=False):
         if not is_main_process():
             return 0, 0, None
-
+        
         logger.info("Evaluate in main process...")
 
         annType = ["segm", "bbox", "keypoints"]
@@ -355,9 +360,8 @@ class VIDEvaluator:
             )
             ]
         )
-
         info = time_info + "\n"
-
+        
         # Evaluate the Dt (detection) json comparing with the ground truth
         if len(data_dict) > 0:
 
@@ -377,13 +381,13 @@ class VIDEvaluator:
             _, tmp = tempfile.mkstemp()
             json.dump(data_dict, open(tmp, "w"), indent=4)
             cocoDt = cocoGt.loadRes(tmp)
-            try:
-                from yolox.layers import COCOeval_opt as COCOeval
-            except ImportError:
-                from pycocotools.cocoeval import COCOeval
+            # try:
+            #     from yolox.layers import COCOeval_opt as COCOeval
+            # except ImportError:
+            #     from pycocotools.cocoeval import COCOeval
 
-                logger.warning("Use standard COCOeval.")
-
+            #     logger.warning("Use standard COCOeval.")
+            from pycocotools.cocoeval import COCOeval
             cocoEval = COCOeval(cocoGt, cocoDt, annType[1])
             cocoEval.evaluate()
             cocoEval.accumulate()
