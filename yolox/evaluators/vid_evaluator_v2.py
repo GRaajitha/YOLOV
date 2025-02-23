@@ -133,6 +133,7 @@ class VIDEvaluator:
         self.tmp_name_refined = './refined_pred.json'
         self.gt_ori = './gt_ori.json'
         self.gt_refined = './gt_refined.json'
+        self.img_id_to_name = {v:k for k,v in self.dataloader.dataset.name_id_dic.items()}
 
     def evaluate(
             self,
@@ -200,8 +201,8 @@ class VIDEvaluator:
                 info_imgs = [info_imgs[0]]
                 label = [label[0]]
             temp_data_list, temp_label_list = self.convert_to_coco_format(outputs, info_imgs, copy.deepcopy(label))
-            data_list.extend(temp_data_list)
-            labels_list.extend(temp_label_list)
+            data_list.extend(temp_data_list) #preds
+            labels_list.extend(temp_label_list) #gts
 
         self.vid_to_coco['annotations'].extend(labels_list)
         statistics = torch.cuda.FloatTensor([inference_time, nms_time, n_samples])
@@ -237,6 +238,7 @@ class VIDEvaluator:
             for ind in range(bboxes_label.shape[0]):
                 label_pred_data = {
                     "image_id": int(self.id),
+                    "image_name": self.img_id_to_name[self.id],
                     "category_id": int(cls_label[ind]),
                     "bbox": bboxes_label[ind].numpy().tolist(),
                     "segmentation": [],
@@ -274,7 +276,7 @@ class VIDEvaluator:
             self.id = self.id + 1
             frame_now = frame_now + 1
 
-        return data_list, label_list
+        return data_list, label_list #predictions, ground_truth
 
     def convert_to_coco_format_ori(self, outputs, info_imgs, labels):
 
@@ -373,14 +375,14 @@ class VIDEvaluator:
             else:
                 json.dump(self.vid_to_coco, open(self.gt_refined, 'w'), indent=4)
                 json.dump(data_dict, open(self.tmp_name_refined, 'w'), indent=4)
-                json.dump(self.vid_to_coco, open(tmp, "w"), indent=4)
+                # json.dump(self.vid_to_coco, open(tmp, "w"), indent=4)
 
-            cocoGt = pycocotools.coco.COCO(tmp)
+            cocoGt = pycocotools.coco.COCO(self.gt_refined)
             # TODO: since pycocotools can't process dict in py36, write data to json file.
 
-            _, tmp = tempfile.mkstemp()
-            json.dump(data_dict, open(tmp, "w"), indent=4)
-            cocoDt = cocoGt.loadRes(tmp)
+            # _, tmp = tempfile.mkstemp()
+            # json.dump(data_dict, open(tmp, "w"), indent=4)
+            cocoDt = cocoGt.loadRes(self.tmp_name_refined)
             # try:
             #     from yolox.layers import COCOeval_opt as COCOeval
             # except ImportError:

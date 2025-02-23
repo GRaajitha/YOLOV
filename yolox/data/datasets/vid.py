@@ -553,19 +553,24 @@ class OVIS(Arg_VID):
                     img_id (int): same as the input index. Used for evaluation.
                 """
         idx = self.name_id_dic[path]
-        annos, img_info, resized_info, img_path = self.annotations[idx]
-        abs_path = os.path.join(self.data_dir,self.name, img_path)
-        img = cv2.imread(abs_path)
+        try:
+            annos, img_info, resized_info, img_path = self.annotations[idx]
+            abs_path = os.path.join(self.data_dir,self.name, img_path)
+            img = cv2.imread(abs_path)
 
-        height, width = img.shape[:2]
-        img_info = (height, width)
-        r = min(self.img_size[0] / img.shape[0], self.img_size[1] / img.shape[1])
-        img = cv2.resize(
-            img,
-            (int(img.shape[1] * r), int(img.shape[0] * r)),
-            interpolation=cv2.INTER_LINEAR,
-        ).astype(np.uint8)
-        return img, annos.copy(), img_info, img_path
+            height, width = img.shape[:2]
+            img_info = (height, width)
+            r = min(self.img_size[0] / img.shape[0], self.img_size[1] / img.shape[1])
+            img = cv2.resize(
+                img,
+                (int(img.shape[1] * r), int(img.shape[0] * r)),
+                interpolation=cv2.INTER_LINEAR,
+            ).astype(np.uint8)
+            return img, annos.copy(), img_info, img_path
+        except:
+            print(path, idx, len(self.annotations))
+            import pdb
+            pdb.set_trace()
 
 
 
