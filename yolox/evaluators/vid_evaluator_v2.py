@@ -14,7 +14,10 @@ from tqdm import tqdm
 from yolox.evaluators.coco_evaluator import per_class_AR_table, per_class_AP_table
 import torch
 import pycocotools.coco
-import pdb
+import os
+import numpy as np
+import cv2
+import wandb
 
 from yolox.utils import (
     gather,
@@ -179,7 +182,6 @@ class VIDEvaluator:
         for cur_iter, (imgs, _, info_imgs, label, path, time_embedding) in enumerate(
                 progress_bar(self.dataloader)
         ):
-
             with torch.no_grad():
                 imgs = imgs.type(tensor_type)
                 # skip the the last iters since batchsize might be not enough for batch inference
@@ -200,7 +202,38 @@ class VIDEvaluator:
             if self.kwargs.get('first_only',False):
                 info_imgs = [info_imgs[0]]
                 label = [label[0]]
-            temp_data_list, temp_label_list = self.convert_to_coco_format(outputs, info_imgs, copy.deepcopy(label))
+            
+            #vizualize
+            if cur_iter == 0:
+                for i in range(imgs.shape[0]):
+                    img = imgs[i]
+                    img = img.cpu().detach().numpy()
+                    img = img.astype('uint8')  # Convert to uint8
+
+                    # Convert from (C, H, W) to (H, W, C)
+                    img = img.transpose(1, 2, 0)
+                    img = np.ascontiguousarray(img)
+                    # Draw bounding boxes
+                    for j in range(label[i].shape[0]):
+                        cls, xmin, ymin, xmax, ymax = label[i][j]
+                        xmin, ymin, xmax, ymax = map(int, [xmin, ymin, xmax, ymax])
+                        img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0,255,0), 3)
+                        img = cv2.putText(img, str(cls.item()), (xmin-5, ymin-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
+
+                    for j in range(outputs[i].shape[0]):
+                        xmin, ymin, xmax, ymax, obj_score, cls_score, cls = outputs[i][j]
+                        xmin, ymin, xmax, ymax = map(int, [xmin, ymin, xmax, ymax])
+                        score = obj_score * cls_score
+                        score = round(score.item(), 3)
+                        if score > 0.001:
+                            img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0,0,255), 3)
+                            # img = cv2.putText(img, str(f"{cls.item()}_{score}"), (xmin+5, ymin+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2)
+
+                    # log the image
+                    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                    wandb.log({f"inferences/{i}": wandb.Image(img)})
+
+            temp_data_list, temp_label_list = self.convert_to_coco_format(outputs, info_imgs, copy.deepcopy(label), path)
             data_list.extend(temp_data_list) #preds
             labels_list.extend(temp_label_list) #gts
 
@@ -219,13 +252,13 @@ class VIDEvaluator:
         synchronize()
         return eval_results
 
-    def convert_to_coco_format(self, outputs, info_imgs, labels):
+    def convert_to_coco_format(self, outputs, info_imgs, labels, paths):
         data_list = []
         label_list = []
         frame_now = 0
 
-        for (output, info_img, _label) in zip(
-                outputs, info_imgs, labels
+        for (output, info_img, _label, path) in zip(
+                outputs, info_imgs, labels, paths
         ):
             # if frame_now>=self.lframe: break
             scale = min(
@@ -238,7 +271,7 @@ class VIDEvaluator:
             for ind in range(bboxes_label.shape[0]):
                 label_pred_data = {
                     "image_id": int(self.id),
-                    "image_name": self.img_id_to_name[self.id],
+                    "image_name": path,
                     "category_id": int(cls_label[ind]),
                     "bbox": bboxes_label[ind].numpy().tolist(),
                     "segmentation": [],
@@ -248,7 +281,7 @@ class VIDEvaluator:
                 }  # COCO json format
                 self.box_id = self.box_id + 1
                 label_list.append(label_pred_data)
-            self.vid_to_coco['images'].append({'id': self.id})
+            self.vid_to_coco['images'].append({'id': self.id, "file_name": path})
 
             if output is None:
                 self.id = self.id + 1
@@ -267,6 +300,7 @@ class VIDEvaluator:
                 label = int(cls[ind])
                 pred_data = {
                     "image_id": int(self.id),
+                    "image_name": path,
                     "category_id": label,
                     "bbox": bboxes[ind].numpy().tolist(),
                     "score": scores[ind].numpy().item(),

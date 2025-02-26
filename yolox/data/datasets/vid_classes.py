@@ -1,5 +1,5 @@
 VID_classes = (
-    "Airborne", 
+    "Airborne",
     "Zip", 
     "Glider", 
     "Balloon", 

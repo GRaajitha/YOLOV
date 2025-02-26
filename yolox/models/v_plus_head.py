@@ -3,6 +3,8 @@
 # Copyright (c) 2014-2021 Megvii Inc. All rights reserved.
 import copy
 import time
+import wandb
+import torchvision.utils as vutils
 
 import math
 import torch
@@ -62,6 +64,8 @@ class YOLOVHead(nn.Module):
         self.gmode = gmode
         self.lmode = lmode
         self.both_mode = both_mode
+
+        self.count = 0
 
         self.cls_convs = nn.ModuleList()
         self.reg_convs = nn.ModuleList()
@@ -273,6 +277,15 @@ class YOLOVHead(nn.Module):
             if self.kwargs.get('vid_reg',False):
                 vid_feat_reg = self.reg_convs2[k](x)
 
+            # if labels is not None and self.count == 0:
+            #     # Log feature maps
+            #     cls_feature_grid = vutils.make_grid(cls_feat[0].detach().cpu().unsqueeze(1), nrow=16, normalize=True, scale_each=True)
+            #     cls_feature_grid = (cls_feature_grid.permute(1,2,0).numpy()* 255).astype("uint8")
+            #     wandb.log({f"layers/feature_map_cls_level_{k}": wandb.Image(cls_feature_grid)})
+            #     reg_feature_grid = vutils.make_grid(reg_feat[0].detach().cpu().unsqueeze(1), nrow=16, normalize=True, scale_each=True)
+            #     reg_feature_grid = (reg_feature_grid.permute(1,2,0).numpy()* 255).astype("uint8")
+            #     wandb.log({f"layers/feature_map_reg_level_{k}": wandb.Image(reg_feature_grid)})
+
             # this part should be the same as the original model
             obj_output = self.obj_preds[k](reg_feat)
             reg_output = self.reg_preds[k](reg_feat)
@@ -292,6 +305,11 @@ class YOLOVHead(nn.Module):
                     .fill_(stride_this_level)
                     .type_as(xin[0])
                 )
+
+                # if labels is not None:
+                #     # Log objectness scores
+                #     wandb.log({f"layers/objectness_map_level_{k}": [wandb.Image(vutils.make_grid(obj_output[0].cpu(), normalize=True))]})
+
                 if self.use_l1:
                     batch_size = reg_output.shape[0]
                     hsize, wsize = reg_output.shape[-2:]
@@ -317,10 +335,17 @@ class YOLOVHead(nn.Module):
                 raw_reg_features.append(reg_feat)
 
             outputs_decode.append(output_decode)
+
+        self.count += 1
         self.hw = [x.shape[-2:] for x in outputs_decode]
         outputs_decode = torch.cat([x.flatten(start_dim=2) for x in outputs_decode], dim=2
                                    ).permute(0, 2, 1)
         decode_res = self.decode_outputs(outputs_decode, dtype=xin[0].type())
+
+        # if labels is not None:
+            # Visualize decoded predictions
+            # wandb.log({"layers/decoded_predictions": [wandb.Image(decode_res[0].d.numpy())]})
+
         preds_per_frame = []
 
         if self.training:
@@ -372,6 +397,12 @@ class YOLOVHead(nn.Module):
                                         reg_feat_flatten,
                                         imgs,
                                         pred_result)
+
+        # Visualizing feature scores
+        # if labels is not None:
+        #     wandb.log({"layers/cls_scores": [wandb.Histogram(cls_scores.cpu().numpy())]})
+        #     wandb.log({"layers/fg_scores": [wandb.Histogram(fg_scores.cpu().numpy())]})
+
         if features_cls == None and not self.training: return pred_result, pred_result
         if features_cls.shape[0] == 0 and not self.training: return pred_result, pred_result
 
@@ -424,6 +455,11 @@ class YOLOVHead(nn.Module):
                 reg_preds = None
             else:
                 obj_preds, reg_preds = None, None
+
+        # Visualize final predictions before returning
+        # if labels is not None is not None:
+        #     wandb.log({"layers/final_cls_preds": [wandb.Histogram(cls_preds.cpu().numpy())]})
+        #     wandb.log({"layers/final_obj_preds": [wandb.Histogram(obj_preds.cpu().numpy())]})
 
         if self.training:
             outputs = torch.cat(outputs, 1)
@@ -554,6 +590,8 @@ class YOLOVHead(nn.Module):
                                              conf_output = obj_per_frame,
                                              nms_thre = nms_thresh,
                                              )
+            # if labels is not None is not None:
+            #     wandb.log({"layers/final_detections": [wandb.Image(result[0].cpu().numpy())]})
             return result, result_ori  # result
 
     def get_output_and_grid(self, output, k, stride, dtype):
@@ -968,8 +1006,6 @@ class YOLOVHead(nn.Module):
         Returns:
             [batch,topK,5+clsnum]
         '''
-        # import pdb
-        # pdb.set_trace()
         box_corner = prediction.new(prediction.shape)
         box_corner[:, :, 0] = prediction[:, :, 0] - prediction[:, :, 2] / 2
         box_corner[:, :, 1] = prediction[:, :, 1] - prediction[:, :, 3] / 2
@@ -1081,13 +1117,11 @@ class YOLOVHead(nn.Module):
 
             detections = detections[nms_out_index]
 
-            # pdb.set_trace()
             if output[i] is None:
                 output[i] = detections
             else:
                 output[i] = torch.cat((output[i], detections))
 
-            # pdb.set_trace()
             if output_index[i] is None:
                 if self.kwargs.get('use_pre_nms',True):
                     output_index[i] = conf_idx[nms_out_index]

@@ -198,7 +198,7 @@ class Exp(BaseExp):
 
         # -----------------  testing config ------------------ #
         # output image size during evaluation/test
-        self.test_size = (576, 576)
+        self.test_size = (1920, 1920)
         # confidence threshold during evaluation/test,
         # boxes whose scores are less than test_conf will be filtered
         self.test_conf = 0.001
@@ -445,7 +445,6 @@ class Exp(BaseExp):
     # rewrite evaluation func
     def get_evaluator(self, val_loader):
         from yolox.evaluators.vid_evaluator_v2 import VIDEvaluator
-
         # val_loader = self.get_eval_loader(batch_size, is_distributed, testdev, legacy)
         evaluator = VIDEvaluator(
             dataloader=val_loader,
