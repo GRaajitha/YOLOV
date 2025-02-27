@@ -18,14 +18,15 @@ class Exp(MyExp):
         # Define yourself dataset path
         self.num_classes = 16  
         self.data_dir = "/shared/vision/dataset/"
-        self.train_ann = "metadata/ovis_v7/ovis_train.json"
-        self.val_ann = "metadata/ovis_v7/ovis_val.json"
-        self.test_ann = "metadata/ovis_v7/ovis_test.json"
+        self.train_ann = "/shared/vision/dataset/metadata/ovis_v7/fixed_len_02_25_train.json"
+        self.val_ann = "/shared/vision/dataset/metadata/ovis_v7/fixed_len_02_25_val.json"
+        self.test_ann = "/shared/vision/dataset/metadata/ovis_v7/fixed_len_02_25_test.json"
         self.input_size = (1920, 1920)
         self.test_size = (1920, 1920)
-        self.vid_train_path = '/shared/vision/dataset/metadata/ovis_v7/train_seq.npy'
-        self.vid_val_path = '/shared/vision/dataset/metadata/ovis_v7/val_seq.npy'
+        # self.vid_train_path = '/shared/vision/dataset/metadata/ovis_v7/train_seq.npy'
+        # self.vid_val_path = '/shared/vision/dataset/metadata/ovis_v7/val_seq.npy'
 
+        self.max_epoch = 20
         self.basic_lr_per_img = 0.0005 / 16
         self.warmup_epochs = 0
         self.no_aug_epochs = 2
@@ -35,13 +36,13 @@ class Exp(MyExp):
         self.lmode = False
         self.lframe = 0
         self.lframe_val = 0
-        self.gframe = 16
-        self.gframe_val = 32 #config your gframe_val and gframe here
+        self.gframe = 8
+        self.gframe_val = 8 #config your gframe_val and gframe here
         self.use_loc_emd = False
         self.iou_base = False
         self.reconf = True
         self.loc_fuse_type = 'identity'
-        self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/yolov++_swin_8gpu_2kinp_ovis_v7_{date.today()}"
+        self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/yolov++_swin_8gpu_2kinp_ovisv7_20ep_{date.today()}"
         # self.output_dir = "./V++_Outputs"
         self.stem_lr_ratio = 0.1
         self.ota_mode = True
@@ -224,7 +225,8 @@ class Exp(MyExp):
                                name='val', #change to your own dir name
                                lframe=self.lframe_val,
                                gframe=self.gframe_val,
-                               preproc=Vid_Val_Transform()
+                               preproc=Vid_Val_Transform(),
+                               val=True
                                )
 
         val_loader = vid.get_trans_loader(batch_size=batch_size, data_num_workers=data_num_workers, dataset=dataset_val)

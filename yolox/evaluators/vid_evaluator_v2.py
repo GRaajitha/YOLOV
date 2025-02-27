@@ -203,35 +203,35 @@ class VIDEvaluator:
                 info_imgs = [info_imgs[0]]
                 label = [label[0]]
             
-            #vizualize
-            if cur_iter == 0:
-                for i in range(imgs.shape[0]):
-                    img = imgs[i]
-                    img = img.cpu().detach().numpy()
-                    img = img.astype('uint8')  # Convert to uint8
+            # #vizualize
+            # if cur_iter == 0:
+            #     for i in range(imgs.shape[0]):
+            #         img = imgs[i]
+            #         img = img.cpu().detach().numpy()
+            #         img = img.astype('uint8')  # Convert to uint8
 
-                    # Convert from (C, H, W) to (H, W, C)
-                    img = img.transpose(1, 2, 0)
-                    img = np.ascontiguousarray(img)
-                    # Draw bounding boxes
-                    for j in range(label[i].shape[0]):
-                        cls, xmin, ymin, xmax, ymax = label[i][j]
-                        xmin, ymin, xmax, ymax = map(int, [xmin, ymin, xmax, ymax])
-                        img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0,255,0), 3)
-                        img = cv2.putText(img, str(cls.item()), (xmin-5, ymin-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
+            #         # Convert from (C, H, W) to (H, W, C)
+            #         img = img.transpose(1, 2, 0)
+            #         img = np.ascontiguousarray(img)
+            #         # Draw bounding boxes
+            #         for j in range(label[i].shape[0]):
+            #             cls, xmin, ymin, xmax, ymax = label[i][j]
+            #             xmin, ymin, xmax, ymax = map(int, [xmin, ymin, xmax, ymax])
+            #             img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0,255,0), 3)
+            #             img = cv2.putText(img, str(cls.item()), (xmin-5, ymin-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
 
-                    for j in range(outputs[i].shape[0]):
-                        xmin, ymin, xmax, ymax, obj_score, cls_score, cls = outputs[i][j]
-                        xmin, ymin, xmax, ymax = map(int, [xmin, ymin, xmax, ymax])
-                        score = obj_score * cls_score
-                        score = round(score.item(), 3)
-                        if score > 0.001:
-                            img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0,0,255), 3)
-                            # img = cv2.putText(img, str(f"{cls.item()}_{score}"), (xmin+5, ymin+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2)
+            #         for j in range(outputs[i].shape[0]):
+            #             xmin, ymin, xmax, ymax, obj_score, cls_score, cls = outputs[i][j]
+            #             xmin, ymin, xmax, ymax = map(int, [xmin, ymin, xmax, ymax])
+            #             score = obj_score * cls_score
+            #             score = round(score.item(), 3)
+            #             if score > 0.001:
+            #                 img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0,0,255), 3)
+            #                 # img = cv2.putText(img, str(f"{cls.item()}_{score}"), (xmin+5, ymin+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2)
 
-                    # log the image
-                    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                    wandb.log({f"inferences/{i}": wandb.Image(img)})
+            #         # log the image
+            #         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            #         wandb.log({f"inferences/{i}": wandb.Image(img)})
 
             temp_data_list, temp_label_list = self.convert_to_coco_format(outputs, info_imgs, copy.deepcopy(label), path)
             data_list.extend(temp_data_list) #preds
@@ -417,13 +417,13 @@ class VIDEvaluator:
             # _, tmp = tempfile.mkstemp()
             # json.dump(data_dict, open(tmp, "w"), indent=4)
             cocoDt = cocoGt.loadRes(self.tmp_name_refined)
-            # try:
-            #     from yolox.layers import COCOeval_opt as COCOeval
-            # except ImportError:
-            #     from pycocotools.cocoeval import COCOeval
+            try:
+                from yolox.layers import COCOeval_opt as COCOeval
+            except ImportError:
+                from pycocotools.cocoeval import COCOeval
+                logger.warning("Use standard COCOeval.")
 
-            #     logger.warning("Use standard COCOeval.")
-            from pycocotools.cocoeval import COCOeval
+            # from pycocotools.cocoeval import COCOeval
             cocoEval = COCOeval(cocoGt, cocoDt, annType[1])
             cocoEval.evaluate()
             cocoEval.accumulate()

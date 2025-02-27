@@ -100,7 +100,7 @@ class Trainer:
         self.data_type = torch.float16 if args.fp16 else torch.float32
         self.input_size = exp.input_size
         self.best_ap = 0
-        self.wandb_exp_name = f"yolov++_swin_8gpu_2kinp_ovis_v7_{date.today()}"
+        self.wandb_exp_name = f"yolov++_swin_8gpu_2kinp_ovisv7_20ep_{date.today()}"
 
         # metric record
         self.meter = MeterBuffer(window_size=exp.print_interval)
@@ -182,19 +182,6 @@ class Trainer:
         logger.info("args: {}".format(self.args))
         logger.info("exp value:\n{}".format(self.exp))
 
-        # Tensorboard logger
-        if self.rank == 0:
-            if self.args.logger == "tensorboard":
-                self.tblogger = SummaryWriter(os.path.join(self.file_name, "tensorboard"))
-            elif self.args.logger == "wandb":
-                wandb_params = dict()
-                for k, v in zip(self.args.opts[0::2], self.args.opts[1::2]):
-                    if k.startswith("wandb-"):
-                        wandb_params.update({k.lstrip("wandb-"): v})
-                self.wandb_logger = WandbLogger(name=self.wandb_exp_name,config=vars(self.exp), **wandb_params)
-            else:
-                raise ValueError("logger must be either 'tensorboard' or 'wandb'")
-
         # model related init
         torch.cuda.set_device(self.local_rank)
         model = self.exp.get_model()
@@ -240,6 +227,19 @@ class Trainer:
         self.evaluator = self.exp.get_evaluator(
             val_loader=self.val_loader
         )
+
+        # Tensorboard logger
+        if self.rank == 0:
+            if self.args.logger == "tensorboard":
+                self.tblogger = SummaryWriter(os.path.join(self.file_name, "tensorboard"))
+            elif self.args.logger == "wandb":
+                wandb_params = dict()
+                for k, v in zip(self.args.opts[0::2], self.args.opts[1::2]):
+                    if k.startswith("wandb-"):
+                        wandb_params.update({k.lstrip("wandb-"): v})
+                self.wandb_logger = WandbLogger(name=self.wandb_exp_name,config=vars(self.exp), **wandb_params)
+            else:
+                raise ValueError("logger must be either 'tensorboard' or 'wandb'")
 
         logger.info("Training start...")
         logger.info("\n{}".format(model))
