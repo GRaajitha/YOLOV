@@ -53,7 +53,11 @@ class YOLOX(nn.Module):
                     img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0,0,255), 3)
 
                 # Save the image
-                # cv2.imwrite(os.path.join(output_dir, f"image_{i}.png"), img)
+                cv2.imwrite(os.path.join(output_dir, f"image_{i}.png"), img)
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            print(f"Saved {x.shape[0]} images in '{output_dir}' directory.")
+            self.count += 1
+
         fpn_outs = self.backbone(x)
 
         if self.training:
