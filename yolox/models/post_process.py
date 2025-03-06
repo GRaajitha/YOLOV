@@ -4,6 +4,114 @@ import torchvision
 import random
 import time
 from yolox.utils import bboxes_iou
+from yolox.models.nms_helper import CustomNMSFunction
+
+import torch
+
+def postprocess_onnx(prediction, num_classes, fc_outputs,
+                conf_output, conf_thre=0.001, nms_thre=0.5,
+                cls_sig=True,return_idx=False, max_predictions_per_image=750):
+    output = [None for _ in range(len(prediction))]
+    output_ori = [None for _ in range(len(prediction))]
+    prediction_ori = copy.deepcopy(prediction)
+    cls_pred, cls_conf = [],[]
+    for _ in range(len(prediction)):
+        tmp_cls,tmp_pred = torch.max(fc_outputs[_], -1, keepdim=False) #
+        cls_pred.append(tmp_pred)
+        cls_conf.append(tmp_cls)
+    # cls_conf, cls_pred = torch.max(fc_outputs, -1, keepdim=False) #
+    nms_out_idxs = []
+
+    max_predictions_per_image = torch.LongTensor([max_predictions_per_image])
+    iou_threshold = torch.tensor([nms_thre], dtype=torch.float32)
+    score_threshold = torch.tensor([conf_thre], dtype=torch.float32)
+
+    # def prepare_nms_input(detections):
+    #     """ Extracts and reshapes inputs for NMS. """
+    #     boxes = detections[:, :4]  # Get boxes (x_min, y_min, x_max, y_max)
+    #     scores = detections[:, 4] * detections[:, 5]  # Get scores = cls score * obj_score
+    #     labels = detections[:, 6]  # Get class labels
+
+    #     if boxes.size(0) == 0:
+    #         return torch.empty((0,), dtype=torch.int64)
+
+    #     # Step 2: Reshape boxes and scores to match ONNX expected format
+    #     num_boxes = boxes.size(0)
+        
+    #     # Convert boxes from [num_boxes, 4] to [1, num_boxes, 4]
+    #     boxes = boxes.unsqueeze(0)  # Shape: [1, num_boxes, 4]
+        
+    #     # Step 3: Create a score tensor of shape [1, num_classes, num_boxes]
+    #     # Assuming that the class labels are integers, we need to create a score tensor for each class
+    #     num_classes = torch.max(labels) + 1  # Get the number of unique classes
+    #     scores_per_class = torch.zeros((1, num_classes, num_boxes), dtype=torch.float32)
+        
+    #     # Fill the score tensor with the appropriate class scores
+    #     for i in range(num_boxes):
+    #         scores_per_class[0, labels[i].long(), i] = scores[i]
+
+    #     return boxes, scores_per_class.cuda(), labels
+
+    detections_outside = None
+    for i, detections in enumerate(prediction):
+
+        if detections==None or not detections.size(0):
+            continue
+        if conf_output is not None:
+            detections[:, 4] = conf_output[i].sigmoid()
+        detections[:, 5] = cls_conf[i].sigmoid()
+        detections[:, 6] = cls_pred[i]
+        if cls_sig:
+            tmp_cls_score = fc_outputs[i].sigmoid()
+        else:
+            tmp_cls_score = fc_outputs[i]
+        cls_mask = tmp_cls_score >= conf_thre
+        cls_loc = torch.where(cls_mask)
+        scores = torch.gather(tmp_cls_score[cls_loc[0]],dim=-1,index=cls_loc[1].unsqueeze(1))#[:,cls_loc[1]]#tmp_cls_score[torch.stack(cls_loc).T]#torch.gather(tmp_cls_score, dim=1, index=torch.stack(cls_loc).T)
+
+        # import pdb
+        # pdb.set_trace()
+        print("tmp_cls_score: ", tmp_cls_score.shape, " detections: ", detections.shape)
+        tmp_cls_score = tmp_cls_score.view(-1, num_classes)
+        num_cols = detections.shape[1] 
+        # detections[:, num_cols - num_classes:num_cols] = tmp_cls_score
+        new_detections = torch.cat((detections[:, 0:num_cols - num_classes], tmp_cls_score), dim=1)
+        # detections_raw = detections[:, :7]
+        detections_outside = new_detections 
+        # new_detetions = detections_raw[cls_loc[0]]
+        # new_detetions[:, -1] = cls_loc[1]
+    #     new_detetions[:,5] = scores.squeeze()
+    #     detections_high = new_detetions  # new_detetions
+    #     detections_ori = prediction_ori[i]
+    #     #print(len(detections_high.shape))
+
+    #     conf_mask = (detections_high[:, 4] * detections_high[:, 5] >= conf_thre).squeeze()
+    #     detections_high = detections_high[conf_mask]
+
+    #     if not detections_high.shape[0]:
+    #         continue
+    #     if len(detections_high.shape)==3:
+    #         detections_high = detections_high[0]
+
+    #     # Prepare inputs for NMS
+    #     boxes_high, scores_high, labels_high = prepare_nms_input(detections_high)
+    #     keep_high = CustomNMSFunction.apply(boxes_high, scores_high, labels_high, iou_threshold, score_threshold, max_predictions_per_image)
+    #     detections_high_selected = detections_high[keep_high]
+        # output[i] = detections
+
+    #     detections_ori = detections_ori[:, :7]
+    #     conf_mask = detections_ori[:, 4] * detections_ori[:, 5] >= conf_thre
+    #     #conf_mask = (detections_ori[:, 4] * detections_ori[:, 5] >= conf_thre).squeeze()
+    #     detections_ori = detections_ori[conf_mask]
+    #     boxes_ori, scores_ori, labels_ori = prepare_nms_input(detections_ori)
+    #     keep_ori = CustomNMSFunction.apply(boxes_ori, scores_ori, labels_ori, iou_threshold, score_threshold, max_predictions_per_image)
+    #     print("keep_ori: ", keep_ori)
+    #     detections_ori = detections_ori[keep_ori]
+    #     output_ori[i] = detections_ori
+
+    # return output, output_ori
+    return detections_outside
+
 def postprocess(prediction, num_classes, fc_outputs,
                 conf_output, conf_thre=0.001, nms_thre=0.5,
                 cls_sig=True,return_idx=False):

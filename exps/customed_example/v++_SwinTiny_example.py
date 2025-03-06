@@ -18,10 +18,9 @@ class Exp(MyExp):
         # Define yourself dataset path
         self.num_classes = 8  
         self.data_dir = "/shared/vision/dataset/"
-        self.train_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_train_split_video_sequences.json"
-        self.val_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_val_split_video_sequences.json"
-        self.test_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_test_split_video_sequences.json"
-        # self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/nightime_yolov++_swin_not_freezing_backbone_3cls_overfit_{date.today()}"
+        self.train_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_train_split_video_sequences_2.json"
+        self.val_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_val_split_video_sequences_2.json"
+        self.test_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_test_split_video_sequences_2.json"
         self.input_size = (1920, 1920)
         self.test_size = (1920, 1920)
         # self.vid_train_path = '/shared/vision/dataset/metadata/ovis_v7/train_seq.npy'
@@ -30,11 +29,7 @@ class Exp(MyExp):
         self.max_epoch = 10
         self.basic_lr_per_img = 0.0005 / 16
         self.warmup_epochs = 4
-        self.no_aug_epochs = 2
         self.pre_no_aug = 2
-        self.eval_interval = 1
-        self.gmode = True
-        self.lmode = False
         self.lframe = 0
         self.lframe_val = 0
         self.gframe = 8
@@ -43,8 +38,8 @@ class Exp(MyExp):
         self.iou_base = False
         self.reconf = True
         self.loc_fuse_type = 'identity'
-        self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/yolov++_swin_8cls_1gpu_2kinp_trimmed100_fixedlen_02_27_split_vid_20ep_{date.today()}"
-        # self.output_dir = "./V++_Outputs"
+        # self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/yolov++_swin_8cls_1gpu_2kinp_trimmed100_fixedlen_02_27_split_vid_20ep_{date.today()}"
+        self.output_dir = "./V++_Outputs"
         self.stem_lr_ratio = 0.1
         self.ota_mode = True
         self.use_pre_nms = False
@@ -54,6 +49,9 @@ class Exp(MyExp):
         self.maximal_limit = 50
         self.conf_sim_thresh = 0.99
         self.decouple_reg = True
+        self.onnx_export=False
+        # topk 
+        self.defualt_pre=100
 
     def get_model(self):
         # rewrite get model func from yolox
@@ -130,7 +128,7 @@ class Exp(MyExp):
                      'traj_linking': self.traj_linking,
                      'iou_window': self.iou_window, 'globalBlocks': self.globalBlocks, 'use_pre_nms': self.use_pre_nms,
                      'cat_ota_fg': self.cat_ota_fg, 'agg_type': self.agg_type, 'minimal_limit': self.minimal_limit,
-                     'conf_sim_thresh': self.conf_sim_thresh, 'decouple_reg':self.decouple_reg,
+                     'conf_sim_thresh': self.conf_sim_thresh, 'decouple_reg':self.decouple_reg, 'onnx_export': self.onnx_export,
                      }
         head = YOLOVHead(self.num_classes, self.width, in_channels=in_channels, heads=self.head, drop=self.drop_rate,
                          use_score=self.use_score, defualt_p=self.defualt_p, sim_thresh=self.sim_thresh,

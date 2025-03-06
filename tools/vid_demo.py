@@ -6,9 +6,9 @@ import argparse
 import os
 import time
 from loguru import logger
-
+import gc
 import cv2
-
+from tqdm import tqdm
 import torch
 
 from yolox.data.data_augment import ValTransform
@@ -130,6 +130,111 @@ def image_demo(predictor, vis_folder, path, current_time, save_result):
         if ch == 27 or ch == ord("q") or ch == ord("Q"):
             break
 
+def imageflow_demo_new(predictor, vis_folder, current_time, args, exp):
+    """Process video frames efficiently to prevent CUDA OOM errors."""
+    
+    gframe = 1 #min(exp.gframe_val, 16)  # Reduce batch size if necessary
+    lframe = 0 #min(exp.lframe_val, 8)   # Adjust local frame batch size
+    traj_linking = exp.traj_linking
+    P, Cls = exp.defualt_p, exp.num_classes
+
+    cap = cv2.VideoCapture(args.path)
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = cap.get(cv2.CAP_PROP_FPS)
+
+    save_folder = os.path.join(vis_folder, time.strftime("%Y_%m_%d_%H_%M_%S", current_time))
+    os.makedirs(save_folder, exist_ok=True)
+    vid_save_path = os.path.join(save_folder, args.path.split("/")[-1])
+    logger.info(f"Video save path: {vid_save_path}")
+
+    vid_writer = cv2.VideoWriter(vid_save_path, cv2.VideoWriter_fourcc(*"mp4v"), fps, (width, height))
+    ratio = min(predictor.test_size[0] / height, predictor.test_size[1] / width)
+
+    frames = []
+    ori_frames = []
+    outputs = []
+    
+    while True:
+        ret_val, frame = cap.read()
+        if not ret_val:
+            break
+        ori_frames.append(frame)
+        frame, _ = predictor.preproc(frame, None, exp.test_size)
+        frames.append(torch.tensor(frame).half())  # Convert to float16 to save memory
+    
+    cap.release()
+    
+    frame_len = len(frames)
+    index_list = list(range(frame_len))
+    res = []
+    
+    if gframe != 0:
+        random.seed(41)
+        random.shuffle(index_list)
+        random.shuffle(frames)
+        split_num = frame_len // gframe
+        for i in range(split_num):
+            res.append(frames[i * gframe:(i + 1) * gframe])
+        res.append(frames[(i + 1) * gframe:])
+    else:
+        split_num = frame_len // lframe
+        for i in range(split_num):
+            if traj_linking and i != 0:
+                res.append(frames[i * lframe - 1:(i + 1) * lframe])
+            else:
+                res.append(frames[i * lframe:(i + 1) * lframe])
+        tail = frames[split_num * lframe - 1:] if traj_linking else frames[split_num * lframe:]
+        res.append(tail)
+
+    outputs, adj_lists, fc_outputs, names = [], [], [], []
+    
+    for ele in tqdm(res):
+        if not ele:
+            continue
+        
+        torch.cuda.empty_cache()  # Free unused memory before inference
+        gc.collect()  # Force garbage collection
+
+        ele = torch.stack(ele).cuda()  # Move batch to GPU
+        with torch.no_grad():  # No gradient tracking, reduces memory usage
+            if traj_linking:
+                pred_result, adj_list, fc_output = predictor.inference(ele, lframe=len(ele), gframe=0)
+                if outputs:
+                    pred_result = pred_result[1:]
+                    fc_output = fc_output[1:]
+                outputs.extend(pred_result)
+                adj_lists.extend(adj_list)
+                fc_outputs.append(fc_output)
+            else:
+                outputs.extend(predictor.inference(ele, lframe=lframe, gframe=gframe))
+
+        del ele  # Free GPU memory
+        torch.cuda.empty_cache()  # Force clearing unused memory
+
+    if traj_linking:
+        outputs = post_linking(fc_outputs, adj_lists, outputs, P, Cls, names, exp)
+
+    outputs = [j for _, j in sorted(zip(index_list, outputs))]
+    
+    if args.post:
+        logger.info("Applying post-processing...")
+        ratio = min(predictor.test_size[0] / height, predictor.test_size[1] / width)
+        out_post_format = predictor.convert_to_post(outputs, ratio, [height, width])
+        out_post = predictor.post(out_post_format)
+        outputs = predictor.convert_to_ori(out_post, frame_len)
+
+    # Save processed video frames
+    for img_idx, (output, img) in enumerate(zip(outputs, ori_frames[:len(outputs)])):
+        if args.post:
+            ratio = 1
+        result_frame = predictor.visual(output, img, ratio, cls_conf=args.conf)
+        vid_writer.write(result_frame)
+
+    vid_writer.release()
+    logger.info(f"Processing completed. Video saved to {vid_save_path}")
+
+
 def imageflow_demo(predictor, vis_folder, current_time, args,exp):
     gframe = exp.gframe_val
     lframe = exp.lframe_val
@@ -147,7 +252,7 @@ def imageflow_demo(predictor, vis_folder, current_time, args,exp):
     os.makedirs(save_folder, exist_ok=True)
     ratio = min(predictor.test_size[0] / height, predictor.test_size[1] / width)
     vid_save_path = os.path.join(save_folder, args.path.split("/")[-1])
-    img_save_path = save_folder
+    # img_save_path = save_folder
     logger.info(f"video save_path is {vid_save_path}")
     vid_writer = cv2.VideoWriter(
         vid_save_path, cv2.VideoWriter_fourcc(*"mp4v"), fps, (int(width), int(height))
@@ -214,14 +319,14 @@ def imageflow_demo(predictor, vis_folder, current_time, args,exp):
         out_post = predictor.post(out_post_format)
         outputs = predictor.convert_to_ori(out_post, frame_len)
 
-    logger.info("Saving detection result in {}".format(img_save_path))
+    # logger.info("Saving detection result in {}".format(img_save_path))
     for img_idx,(output,img) in enumerate(zip(outputs,ori_frames[:len(outputs)])):
         if args.post:
             ratio = 1
         result_frame = predictor.visual(output,img,ratio,cls_conf=args.conf)
         if args.save_result:
             vid_writer.write(result_frame)
-            cv2.imwrite(os.path.join(img_save_path, str(img_idx) + '.jpg'), result_frame)
+            # cv2.imwrite(os.path.join(img_save_path, str(img_idx) + '.jpg'), result_frame)
 
 def main(exp, args):
     if not args.experiment_name:

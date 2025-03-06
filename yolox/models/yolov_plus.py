@@ -73,7 +73,6 @@ class YOLOV(nn.Module):
                 "loss_refined_obj":loss_refined_obj
             }
         else:
-
             outputs = self.head(fpn_outs,targets,x,nms_thresh=nms_thresh, lframe=lframe,gframe=gframe)
 
         return outputs

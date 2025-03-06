@@ -11,4 +11,20 @@ COCO_CLASSES = (
     "Glider",
     "Bird",
     "Balloon"
+    # "Airborne",
+    # "Zip", 
+    # "Glider", 
+    # "Balloon", 
+    # "Paraglider", 
+    # "Bird", 
+    # "Flock", 
+    # "Airplane", 
+    # "Ultralight", 
+    # "Helicopter", 
+    # "Unknown", 
+    # "HangGlider",
+    # "CommercialAirliner",
+    # "Drone",
+    # "Artificial", 
+    # "Natural"
 )

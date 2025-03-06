@@ -13,7 +13,7 @@ import torch.nn.functional as F
 import torchvision
 from loguru import logger
 
-from yolox.models.post_process import postprocess,get_linking_mat
+from yolox.models.post_process import postprocess,get_linking_mat, postprocess_onnx
 from yolox.models.post_trans import MSA_yolov, LocalAggregation,visual_attention
 from yolox.utils import bboxes_iou
 from yolox.utils.box_op import box_cxcywh_to_xyxy, generalized_box_iou
@@ -584,6 +584,17 @@ class YOLOVHead(nn.Module):
 
             if not self.kwargs.get('reconf',False): obj_per_frame = None
             #obj_per_frame = None
+
+            if kwargs.get('onnx_export',False):
+                result = postprocess_onnx(copy.deepcopy(pred_result),
+                                                      self.num_classes,
+                                                      cls_per_frame,
+                                                      conf_output = obj_per_frame,
+                                                      nms_thre = nms_thresh,
+                                                      max_predictions_per_image=self.Prenum,
+                                                      )
+                return result #result_ori
+
             result, result_ori = postprocess(copy.deepcopy(pred_result),
                                              self.num_classes,
                                              cls_per_frame,

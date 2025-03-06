@@ -6,7 +6,9 @@ import torch.nn as nn
 
 from .yolo_head import YOLOXHead
 from .yolo_pafpn import YOLOPAFPN
-
+import os
+import cv2
+import numpy as np
 
 class YOLOX(nn.Module):
     """
@@ -24,9 +26,39 @@ class YOLOX(nn.Module):
 
         self.backbone = backbone
         self.head = head
+        self.count = 0
 
     def forward(self, x, targets=None):
         # fpn output content features of [dark3, dark4, dark5]
+
+        if targets is not None and self.count==0:
+            output_dir = f"./YOLOX_Outputs/inputViz/"
+            os.makedirs(output_dir, exist_ok=True)
+            for i in range(x.shape[0]):
+                img = x[i]
+                img = img.cpu().detach().numpy()
+                img = img.astype('uint8')  # Convert to uint8
+
+                # Convert from (C, H, W) to (H, W, C)
+                img = img.transpose(1, 2, 0)
+                img = np.ascontiguousarray(img)
+
+                # Draw bounding boxes
+                for j in range(targets.shape[1]):
+                    cls, c_x, c_y, w, h = targets[i, j]
+                    c_x, c_y, w, h = map(int, [c_x, c_y, w/2, h/2])
+                    xmin = c_x - w
+                    ymin = c_y - h
+                    xmax = c_x + w
+                    ymax = c_y + h
+                    img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0,0,255), 3)
+
+                # Save the image
+                cv2.imwrite(os.path.join(output_dir, f"image_{i}.png"), img)
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            print(f"Saved {x.shape[0]} images in '{output_dir}' directory.")
+            self.count += 1
+
         fpn_outs = self.backbone(x)
 
         if self.training:
