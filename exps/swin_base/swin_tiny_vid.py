@@ -9,20 +9,20 @@ class Exp(MyExp):
     def __init__(self):
         super(Exp, self).__init__()
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
-        self.data_dir = '/shared/vision/dataset/'
-        self.train_ann = "metadata/v7/subsample_10_percent_shuffled/train_annotations_coco_fmt.json"
-        self.val_ann = "metadata/v7/subsample_10_percent_shuffled/val_annotations_coco_fmt.json"
-        self.test_ann = "metadata/v7/subsample_10_percent_shuffled/test_annotations_coco_fmt.json"
-        self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/yolox_swintiny_2kinp_zipline_{date.today()}"
+        self.data_dir = '/shared/users/raajitha/YOLOVexperiments/night_time_data/'
+        self.train_ann = "train_annotations_coco_fmt.json"
+        self.val_ann = "train_annotations_coco_fmt.json"
+        self.test_ann = "train_annotations_coco_fmt.json"
+        self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/nightime_yolox_swintiny_overfit_{date.today()}"
         self.basic_lr_per_img = 0.0005 / 32.0
         self.save_history_ckpt = False
-        self.max_epoch = 15
+        self.max_epoch = 10
         self.input_size = (1920,1920)
         self.test_size = (1920,1920)
         self.eval_interval = 1
         self.warmup_epochs = 1
         self.no_aug_epochs = 7
-        self.num_classes = 16
+        self.num_classes = 3
         self.test_conf = 0.001
         self.train_name = ''
         self.val_name = ''

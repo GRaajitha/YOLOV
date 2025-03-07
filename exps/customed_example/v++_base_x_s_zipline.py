@@ -6,9 +6,10 @@ sys.path.append("..")
 from exps.yolov.yolov_base import Exp as MyExp
 from loguru import logger
 from yolox.data.datasets import vid
-from datetime import date
 from yolox.data.data_augment import Vid_Val_Transform
+from datetime import date
 
+#exp after OTA_VID_woRegScore, exp 8 in the doc, decouple the reg and cls refinement
 class Exp(MyExp):
     def __init__(self):
         super(Exp, self).__init__()
@@ -17,16 +18,16 @@ class Exp(MyExp):
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
 
         # Define yourself dataset path
-        self.num_classes = 16
-        self.data_dir = "/shared/users/raajitha/YOLOVexperiments/data" #set your dataset path
-        self.train_ann = "ovis_train.json" #set your train annotation file
-        self.val_ann = "ovis_val.json" #set your val annotation file
-        self.test_ann = "ovis_test.json" #set your test annotation file
+        self.num_classes = 8  
+        self.data_dir = "/shared/vision/dataset/"
+        self.train_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_train_split_video_sequences.json"
+        self.val_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_val_split_video_sequences.json"
+        self.test_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_test_split_video_sequences.json"
         self.input_size = (1920, 1920)
         self.test_size = (1920, 1920)
-        self.vid_train_path = '/shared/users/raajitha/YOLOVexperiments/data/train_seq.npy'
-        self.vid_val_path = './shared/users/raajitha/YOLOVexperiments/data/val_seq.npy'
 
+        self.max_epoch = 20
+        self.basic_lr_per_img = 0.0005 / 16
         self.warmup_epochs = 0
         self.no_aug_epochs = 2
         self.pre_no_aug = 2
@@ -36,14 +37,24 @@ class Exp(MyExp):
         self.lframe = 0
         self.lframe_val = 0
         self.gframe = 8
-        self.gframe_val = 16
+        self.gframe_val = 8
         self.use_loc_emd = False
         self.iou_base = False
         self.reconf = True
         self.loc_fuse_type = 'identity'
-        self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/yolovs_ovis_zipline_{date.today()}"
+        # self.output_dir = "./V++_outputs"
+        self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/yolov++_base_x_s_8cls_1gpu_2kinp_trimmed100_fixedlen_02_27_split_vid_20ep_{date.today()}"
         self.stem_lr_ratio = 0.1
         self.ota_mode = True
+        #check pre_nms for testing when use_pre_nms is False in training: Result: AP50 drop 3.0
+        self.use_pre_nms = False
+        self.cat_ota_fg = False
+        self.agg_type='msa'
+        self.minimal_limit = 0
+        self.decouple_reg = True
+        self.onnx_export=False
+        # topk 
+        self.defualt_pre=100
 
     def get_model(self):
         # rewrite get model func from yolox
@@ -117,7 +128,9 @@ class Exp(MyExp):
                      'local_mask': self.local_mask, 'local_mask_branch': self.local_mask_branch,
                      'pure_pos_emb':self.pure_pos_emb,'loc_conf':self.loc_conf,'iou_base':self.iou_base,
                      'reconf':self.reconf,'ota_mode':self.ota_mode,'ota_cls':self.ota_cls,'traj_linking':self.traj_linking,
-                     'iou_window':self.iou_window,'globalBlocks':self.globalBlocks
+                     'iou_window':self.iou_window,'globalBlocks':self.globalBlocks,'use_pre_nms':self.use_pre_nms,
+                     'cat_ota_fg':self.cat_ota_fg, 'agg_type':self.agg_type,'minimal_limit':self.minimal_limit,
+                     'decouple_reg':self.decouple_reg,
                      }
         head = YOLOVHead(self.num_classes, self.width, in_channels=in_channels, heads=self.head, drop=self.drop_rate,
                          use_score=self.use_score, defualt_p=self.defualt_p, sim_thresh=self.sim_thresh,
@@ -181,7 +194,7 @@ class Exp(MyExp):
             self.optimizer = optimizer
 
         return self.optimizer
-
+    
     def get_data_loader(
             self, batch_size, is_distributed, no_aug=False, cache_img=False
     ):
@@ -212,7 +225,8 @@ class Exp(MyExp):
                                name='val', #change to your own dir name
                                lframe=self.lframe_val,
                                gframe=self.gframe_val,
-                               preproc=Vid_Val_Transform()
+                               preproc=Vid_Val_Transform(),
+                               val=True
                                )
 
         val_loader = vid.get_trans_loader(batch_size=batch_size, data_num_workers=data_num_workers, dataset=dataset_val)

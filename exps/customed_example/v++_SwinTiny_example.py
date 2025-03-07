@@ -16,18 +16,20 @@ class Exp(MyExp):
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
         self.backbone_name = 'Swin_Tiny'
         # Define yourself dataset path
-        self.num_classes = 16  
-        self.data_dir = "/shared/vision/dataset/"
-        self.train_ann = "metadata/ovis_v7/ovis_train.json"
-        self.val_ann = "metadata/ovis_v7/ovis_val.json"
-        self.test_ann = "metadata/ovis_v7/ovis_test.json"
+        self.num_classes = 3  
+        self.data_dir = '/shared/users/raajitha/YOLOVexperiments/night_time_data/'
+        self.train_ann = "train_vid_coco_fmt.json"
+        self.val_ann = "train_vid_coco_fmt.json"
+        self.test_ann = "train_vid_coco_fmt.json"
+        self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/nightime_yolov++_swin_not_freezing_backbone_3cls_overfit_{date.today()}"
         self.input_size = (1920, 1920)
         self.test_size = (1920, 1920)
-        self.vid_train_path = '/shared/vision/dataset/metadata/ovis_v7/train_seq.npy'
-        self.vid_val_path = '/shared/vision/dataset/metadata/ovis_v7/val_seq.npy'
+        # self.vid_train_path = '/shared/vision/dataset/metadata/ovis_v7/train_seq.npy'
+        # self.vid_val_path = '/shared/vision/dataset/metadata/ovis_v7/val_seq.npy'
 
+        self.max_epoch = 10
         self.basic_lr_per_img = 0.0005 / 16
-        self.warmup_epochs = 0
+        self.warmup_epochs = 4
         self.no_aug_epochs = 2
         self.pre_no_aug = 2
         self.eval_interval = 1
@@ -35,13 +37,13 @@ class Exp(MyExp):
         self.lmode = False
         self.lframe = 0
         self.lframe_val = 0
-        self.gframe = 16
-        self.gframe_val = 32 #config your gframe_val and gframe here
+        self.gframe = 8
+        self.gframe_val = 8 #config your gframe_val and gframe here
         self.use_loc_emd = False
         self.iou_base = False
         self.reconf = True
         self.loc_fuse_type = 'identity'
-        self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/yolov++_swin_8gpu_2kinp_ovis_v7_{date.today()}"
+        # self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/yolov++_swin_8cls_1gpu_2kinp_trimmed100_fixedlen_02_27_split_vid_20ep_{date.today()}"
         # self.output_dir = "./V++_Outputs"
         self.stem_lr_ratio = 0.1
         self.ota_mode = True
@@ -117,8 +119,8 @@ class Exp(MyExp):
                     m.momentum = 0.03
 
 
-        for layer in backbone.parameters():
-            layer.requires_grad = False  # fix the backbone
+        # for layer in backbone.parameters():
+        #     layer.requires_grad = False  # fix the backbone
 
         more_args = {'use_ffn': self.use_ffn, 'use_time_emd': self.use_time_emd, 'use_loc_emd': self.use_loc_emd,
                      'loc_fuse_type': self.loc_fuse_type, 'use_qkv': self.use_qkv,
@@ -135,15 +137,15 @@ class Exp(MyExp):
                          pre_nms=self.pre_nms, ave=self.ave, defulat_pre=self.defualt_pre, test_conf=self.test_conf,
                          use_mask=self.use_mask,gmode=self.gmode,lmode=self.lmode,both_mode=self.both_mode,
                          localBlocks = self.localBlocks,**more_args)
-        for layer in head.stems.parameters():
-            layer.requires_grad = False  # set stem fixed
-        for layer in head.reg_convs.parameters():
-            layer.requires_grad = False
-            layer.requires_grad = False
-        for layer in head.cls_convs.parameters():
-            layer.requires_grad = False
-        for layer in head.reg_preds.parameters():
-            layer.requires_grad = False
+        # for layer in head.stems.parameters():
+        #     layer.requires_grad = False  # set stem fixed
+        # for layer in head.reg_convs.parameters():
+        #     layer.requires_grad = False
+        #     layer.requires_grad = False
+        # for layer in head.cls_convs.parameters():
+        #     layer.requires_grad = False
+        # for layer in head.reg_preds.parameters():
+        #     layer.requires_grad = False
 
         self.model = YOLOV(backbone, head)
 
@@ -224,7 +226,8 @@ class Exp(MyExp):
                                name='val', #change to your own dir name
                                lframe=self.lframe_val,
                                gframe=self.gframe_val,
-                               preproc=Vid_Val_Transform()
+                               preproc=Vid_Val_Transform(),
+                               val=True
                                )
 
         val_loader = vid.get_trans_loader(batch_size=batch_size, data_num_workers=data_num_workers, dataset=dataset_val)
