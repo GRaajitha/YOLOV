@@ -52,6 +52,7 @@ class Exp(MyExp):
         self.cat_ota_fg = False
         self.agg_type='msa'
         self.minimal_limit = 0
+        self.maximal_limit = 100
         self.decouple_reg = True
         self.onnx_export=False
         # topk 
@@ -131,7 +132,7 @@ class Exp(MyExp):
                      'reconf':self.reconf,'ota_mode':self.ota_mode,'ota_cls':self.ota_cls,'traj_linking':self.traj_linking,
                      'iou_window':self.iou_window,'globalBlocks':self.globalBlocks,'use_pre_nms':self.use_pre_nms,
                      'cat_ota_fg':self.cat_ota_fg, 'agg_type':self.agg_type,'minimal_limit':self.minimal_limit,
-                     'decouple_reg':self.decouple_reg,
+                     'decouple_reg':self.decouple_reg, 'onnx_export': self.onnx_export,'maximal_limit':self.maximal_limit,
                      }
         head = YOLOVHead(self.num_classes, self.width, in_channels=in_channels, heads=self.head, drop=self.drop_rate,
                          use_score=self.use_score, defualt_p=self.defualt_p, sim_thresh=self.sim_thresh,

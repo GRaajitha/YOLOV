@@ -65,7 +65,8 @@ class YOLOVHead(nn.Module):
         self.lmode = lmode
         self.both_mode = both_mode
 
-        self.count = 0
+        # for visualization
+        # self.count = 0
 
         self.cls_convs = nn.ModuleList()
         self.reg_convs = nn.ModuleList()
@@ -336,7 +337,7 @@ class YOLOVHead(nn.Module):
 
             outputs_decode.append(output_decode)
 
-        self.count += 1
+        # self.count += 1
         self.hw = [x.shape[-2:] for x in outputs_decode]
         outputs_decode = torch.cat([x.flatten(start_dim=2) for x in outputs_decode], dim=2
                                    ).permute(0, 2, 1)
@@ -362,7 +363,6 @@ class YOLOVHead(nn.Module):
                 obj_targets,fg_masks,num_fg,num_gts,l1_targets = assigned_packs
 
             if not self.ota_mode: ota_idxs = None
-
         else:
             ota_idxs = None
 
@@ -373,7 +373,13 @@ class YOLOVHead(nn.Module):
             [x.flatten(start_dim=2) for x in raw_reg_features], dim=2
         ).permute(0, 2, 1)
 
-        pred_result, agg_idx, refine_obj_masks, cls_label_reorder = self.postprocess_widx(decode_res,
+        if self.kwargs.get("onnx_export", False):
+            pred_result, agg_idx = self.postprocess_widx_onnx(decode_res,
+                                                             num_classes=self.num_classes,
+                                                             topK=self.Prenum,
+                                                        )
+        else:
+            pred_result, agg_idx, refine_obj_masks, cls_label_reorder = self.postprocess_widx(decode_res,
                                                     num_classes=self.num_classes,
                                                     nms_thre=self.nms_thresh,
                                                     ota_idxs=ota_idxs,
@@ -387,9 +393,10 @@ class YOLOVHead(nn.Module):
             return torch.tensor(0),0,0,0,0,1,0,0,0
 
         if not self.training and imgs.shape[0] == 1:
-            return pred_result,pred_result
-
-
+            if self.kwargs.get("onnx_export", False):
+                return pred_result
+            else:
+                return pred_result,pred_result
 
         (features_cls, features_reg, cls_scores,
          fg_scores, locs, all_scores) = self.find_feature_score(cls_feat_flatten,
@@ -397,15 +404,21 @@ class YOLOVHead(nn.Module):
                                         reg_feat_flatten,
                                         imgs,
                                         pred_result)
-
         # Visualizing feature scores
         # if labels is not None:
         #     wandb.log({"layers/cls_scores": [wandb.Histogram(cls_scores.cpu().numpy())]})
         #     wandb.log({"layers/fg_scores": [wandb.Histogram(fg_scores.cpu().numpy())]})
 
-        if features_cls == None and not self.training: return pred_result, pred_result
-        if features_cls.shape[0] == 0 and not self.training: return pred_result, pred_result
-
+        if features_cls == None and not self.training:
+            if self.kwargs.get("onnx_export", False):
+                return pred_result
+            else:
+                return pred_result,pred_result
+        if features_cls.shape[0] == 0 and not self.training:
+            if self.kwargs.get("onnx_export", False):
+                return pred_result
+            else:
+                return pred_result,pred_result
 
         features_reg_raw = features_reg.unsqueeze(0)
         features_cls_raw = features_cls.unsqueeze(0)  # [1,features,channels]
@@ -574,36 +587,42 @@ class YOLOVHead(nn.Module):
             #refined_preds = torch.cat([reg_preds, obj_preds, cls_preds], 1) #[num_preds, 5+num_classes]
 
             #split refined_preds into frames according to preds_per_frame which is the number of preds in each frame
-            cls_per_frame, obj_per_frame, reg_per_frame = [], [], []
-            for i in range(len(preds_per_frame)):
-                if self.kwargs.get('reconf',False):
+            if kwargs.get('onnx_export',False):
+                cls_per_frame, obj_per_frame, reg_per_frame = [], [], []
+                for i in range(len(pred_result)):
+                    obj_per_frame.append(obj_preds[:self.Prenum].squeeze(-1))
+                    obj_preds = obj_preds[self.Prenum:]
+                    cls_per_frame.append(cls_preds[:self.Prenum])
+                    cls_preds = cls_preds[self.Prenum:]
+                
+                result = postprocess_onnx(pred_result,
+                                        self.num_classes,
+                                        cls_per_frame,
+                                        conf_output = obj_per_frame,
+                                        nms_thre = nms_thresh,
+                                        max_predictions_per_image=self.Prenum,
+                                        )
+                return result
+            else:
+                cls_per_frame, obj_per_frame, reg_per_frame = [], [], []
+
+                for i in range(len(pred_result)):
                     obj_per_frame.append(obj_preds[:preds_per_frame[i]].squeeze(-1))
                     obj_preds = obj_preds[preds_per_frame[i]:]
-                cls_per_frame.append(cls_preds[:preds_per_frame[i]])
-                cls_preds = cls_preds[preds_per_frame[i]:]
+                    cls_per_frame.append(cls_preds[:preds_per_frame[i]])
+                    cls_preds = cls_preds[preds_per_frame[i]:]
 
-            if not self.kwargs.get('reconf',False): obj_per_frame = None
-            #obj_per_frame = None
-
-            if kwargs.get('onnx_export',False):
-                result = postprocess_onnx(copy.deepcopy(pred_result),
-                                                      self.num_classes,
-                                                      cls_per_frame,
-                                                      conf_output = obj_per_frame,
-                                                      nms_thre = nms_thresh,
-                                                      max_predictions_per_image=self.Prenum,
-                                                      )
-                return result #result_ori
-
-            result, result_ori = postprocess(copy.deepcopy(pred_result),
-                                             self.num_classes,
-                                             cls_per_frame,
-                                             conf_output = obj_per_frame,
-                                             nms_thre = nms_thresh,
-                                             )
-            # if labels is not None is not None:
-            #     wandb.log({"layers/final_detections": [wandb.Image(result[0].cpu().numpy())]})
-            return result, result_ori  # result
+                    if not self.kwargs.get('reconf',False): obj_per_frame = None
+            
+                result, result_ori = postprocess(copy.deepcopy(pred_result),
+                                                self.num_classes,
+                                                cls_per_frame,
+                                                conf_output = obj_per_frame,
+                                                nms_thre = nms_thresh,
+                                                )
+                # if labels is not None is not None:
+                #     wandb.log({"layers/final_detections": [wandb.Image(result[0].cpu().numpy())]})
+                return result, result_ori
 
     def get_output_and_grid(self, output, k, stride, dtype):
         grid = self.grids[k]
@@ -1002,6 +1021,55 @@ class YOLOVHead(nn.Module):
             fg_mask_inboxes
         ]
         return num_fg, gt_matched_classes, pred_ious_this_matching, matched_gt_inds
+
+    def postprocess_widx_onnx(self, prediction, num_classes, topK=100):
+        """
+        Selects topK predictions per batch based on confidence scores.
+
+        Args:
+            prediction: Tensor [batch, feature_num, 5 + num_classes]
+            num_classes: Number of classes
+            topK: Number of top detections to keep
+            conf_thresh: Confidence threshold
+            ota_idxs: Optional list of OTA indices
+
+        Returns:
+            output: List of tensors [batch, topK, 5 + num_classes]
+            output_index: List of tensors [batch, topK] (indices of selected detections)
+        """
+        
+        batch_size = prediction.shape[0]
+        
+        # Convert predictions from center format to corner format
+        box_corner = prediction.clone()
+        box_corner[:, :, 0] = prediction[:, :, 0] - prediction[:, :, 2] / 2
+        box_corner[:, :, 1] = prediction[:, :, 1] - prediction[:, :, 3] / 2
+        box_corner[:, :, 2] = prediction[:, :, 0] + prediction[:, :, 2] / 2
+        box_corner[:, :, 3] = prediction[:, :, 1] + prediction[:, :, 3] / 2
+        prediction[:, :, :4] = box_corner[:, :, :4]
+
+        output = [None] * batch_size
+        output_index = [None] * batch_size
+
+        for i in range(batch_size):
+            image_pred = prediction[i]
+            if image_pred.size(0) == 0:
+                continue
+
+            # Compute class confidence and select highest scoring class
+            class_conf, class_pred = torch.max(image_pred[:, 5: 5 + num_classes], dim=1, keepdim=True)
+            
+            # Create final detections tensor
+            detections = torch.cat((image_pred[:, :5], class_conf, class_pred.float(), image_pred[:, 5: 5 + num_classes]), dim=1)
+            scores = detections[:, 4] * detections[:, 5]  # Object confidence * Class confidence
+
+            #  select topK detections based on score
+            topK_indices = torch.topk(scores, topK, largest=True, sorted=True).indices
+            detections = detections[topK_indices]
+
+            output[i] = detections
+            output_index[i] = topK_indices
+        return output, output_index
 
     def postprocess_widx(self, prediction, num_classes, nms_thre=0.5, ota_idxs=None,conf_thresh=0.001):
         # find topK predictions, play the same role as RPN
