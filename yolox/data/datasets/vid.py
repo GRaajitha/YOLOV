@@ -374,6 +374,7 @@ class Arg_VID(torchDataset):
                             res.append(tmp[(i + 1) * gframe:])
                 elif self.mode == 'uniform':
                     split_num = int(ele_len / (gframe))
+                    print("split_num: ", split_num)
                     all_uniform_frame = element[:split_num * gframe]
                     for i in range(split_num):
                         res.append(all_uniform_frame[i::split_num])

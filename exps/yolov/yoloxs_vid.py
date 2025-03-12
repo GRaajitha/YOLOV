@@ -3,7 +3,7 @@ from datetime import datetime
 from yolox.exp import Exp as MyExp
 import torch
 import torch.nn as nn
-
+from datetime import date
 
 class Exp(MyExp):
     def __init__(self):
@@ -13,29 +13,29 @@ class Exp(MyExp):
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
 
         # Define yourself dataset path
-        self.num_classes = 16
-        self.data_dir = "/shared/vision/dataset/"
-        self.train_ann = "metadata/v7/subsample_10_percent_shuffled/train_annotations_coco_fmt.json"
-        self.val_ann = "metadata/v7/subsample_10_percent_shuffled/val_annotations_coco_fmt.json"
-        self.test_ann = "metadata/v7/subsample_10_percent_shuffled/test_annotations_coco_fmt.json"
-        self.output_dir = "/shared/users/raajitha/YOLOVexperiments/yoloxs_vid_2kin_AdamOptim_jan23_11_04PM"
+        self.num_classes = 3
+        self.data_dir = '/shared/users/raajitha/YOLOVexperiments/night_time_data/'
+        self.train_ann = "train_annotations_coco_fmt.json"
+        self.val_ann = "train_annotations_coco_fmt.json"
+        self.test_ann = "train_annotations_coco_fmt.json"
+        self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/nightime_yolox_s_overfit_20ep_{date.today()}"
 
         self.train_name = ''
         self.val_name = ''
-        self.max_epoch = 30
-        self.no_aug_epochs = 1
-        self.warmup_epochs = 0
+        self.max_epoch = 20
+        self.no_aug_epochs = 5
+        self.warmup_epochs = 3
         self.eval_interval = 1
         self.print_interval = 10
         self.min_lr_ratio = 0.05
-        self.basic_lr_per_img = 0.002 / 32
+        self.basic_lr_per_img = 0.000125
         self.input_size = (1920, 1920)
         self.test_size = (1920, 1920)
         self.multiscale_range = 5
         self.test_conf = 0.001
         self.nmsthre = 0.5
         self.data_num_workers = 6
-        # self.momentum = 0.9
+        self.momentum = 0.9
         #COCO API has been changed
         self.data_shuffle = False
         self.mosaic_scale = (0.5, 1.5)

@@ -21,7 +21,7 @@ class Exp(MyExp):
         self.train_ann = "train_vid_coco_fmt.json"
         self.val_ann = "train_vid_coco_fmt.json"
         self.test_ann = "train_vid_coco_fmt.json"
-        self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/nightime_yolov++_swin_not_freezing_backbone_3cls_overfit_{date.today()}"
+        # self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/nightime_yolov++_swin_not_freezing_backbone_3cls_overfit_{date.today()}"
         self.input_size = (1920, 1920)
         self.test_size = (1920, 1920)
         # self.vid_train_path = '/shared/vision/dataset/metadata/ovis_v7/train_seq.npy'
@@ -44,7 +44,7 @@ class Exp(MyExp):
         self.reconf = True
         self.loc_fuse_type = 'identity'
         # self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/yolov++_swin_8cls_1gpu_2kinp_trimmed100_fixedlen_02_27_split_vid_20ep_{date.today()}"
-        # self.output_dir = "./V++_Outputs"
+        self.output_dir = "./V++_Outputs"
         self.stem_lr_ratio = 0.1
         self.ota_mode = True
         self.use_pre_nms = False
@@ -119,8 +119,8 @@ class Exp(MyExp):
                     m.momentum = 0.03
 
 
-        # for layer in backbone.parameters():
-        #     layer.requires_grad = False  # fix the backbone
+        for layer in backbone.parameters():
+            layer.requires_grad = False  # fix the backbone
 
         more_args = {'use_ffn': self.use_ffn, 'use_time_emd': self.use_time_emd, 'use_loc_emd': self.use_loc_emd,
                      'loc_fuse_type': self.loc_fuse_type, 'use_qkv': self.use_qkv,
@@ -137,15 +137,15 @@ class Exp(MyExp):
                          pre_nms=self.pre_nms, ave=self.ave, defulat_pre=self.defualt_pre, test_conf=self.test_conf,
                          use_mask=self.use_mask,gmode=self.gmode,lmode=self.lmode,both_mode=self.both_mode,
                          localBlocks = self.localBlocks,**more_args)
-        # for layer in head.stems.parameters():
-        #     layer.requires_grad = False  # set stem fixed
-        # for layer in head.reg_convs.parameters():
-        #     layer.requires_grad = False
-        #     layer.requires_grad = False
-        # for layer in head.cls_convs.parameters():
-        #     layer.requires_grad = False
-        # for layer in head.reg_preds.parameters():
-        #     layer.requires_grad = False
+        for layer in head.stems.parameters():
+            layer.requires_grad = False  # set stem fixed
+        for layer in head.reg_convs.parameters():
+            layer.requires_grad = False
+            layer.requires_grad = False
+        for layer in head.cls_convs.parameters():
+            layer.requires_grad = False
+        for layer in head.reg_preds.parameters():
+            layer.requires_grad = False
 
         self.model = YOLOV(backbone, head)
 

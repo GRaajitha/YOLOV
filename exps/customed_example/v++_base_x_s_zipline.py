@@ -205,7 +205,7 @@ class Exp(MyExp):
                                 max_labels=50,
                                 flip_prob=self.flip_prob,
                                 hsv_prob=self.hsv_prob),
-                            mode='random',
+                            mode='uniform',
                             lframe=0,
                             gframe=batch_size,
                             data_dir=self.data_dir,
@@ -220,7 +220,7 @@ class Exp(MyExp):
         assert batch_size == self.lframe_val+self.gframe_val
         dataset_val = vid.OVIS(data_dir=self.data_dir, #change to your own dataset
                                img_size=self.test_size,
-                               mode='random',
+                               mode='uniform',
                                COCO_anno=os.path.join(self.data_dir, self.val_ann),
                                name='val', #change to your own dir name
                                lframe=self.lframe_val,

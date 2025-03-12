@@ -100,7 +100,7 @@ class Trainer:
         self.data_type = torch.float16 if args.fp16 else torch.float32
         self.input_size = exp.input_size
         self.best_ap = 0
-        self.wandb_exp_name = f"nightime_yolov++_swin_not_freezing_backbone_3cls_overfit_{date.today()}"
+        self.wandb_exp_name = "" #f"yolov++_base_x_s_fullmodel_train_nightime_overfit_20ep_{date.today()}"
 
         # metric record
         self.meter = MeterBuffer(window_size=exp.print_interval)
