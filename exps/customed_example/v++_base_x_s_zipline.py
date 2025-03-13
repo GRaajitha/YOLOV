@@ -38,12 +38,13 @@ class Exp(MyExp):
         self.lframe_val = 0
         self.gframe = 8
         self.gframe_val = 8
+        self.seq_stride = 3
         self.use_loc_emd = False
         self.iou_base = False
         self.reconf = True
         self.loc_fuse_type = 'identity'
         # self.output_dir = "./V++_outputs"
-        self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/yolov++_base_x_s_8cls_1gpu_2kinp_trimmed100_fixedlen_02_27_split_vid_20ep_{date.today()}"
+        self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/yolov++_base_x_s_uniform_w_stride3_gframe8_8cls_2kinp_trimmed100_fixedlen_02_27_split_vid_20ep_{date.today()}"
         self.stem_lr_ratio = 0.1
         self.ota_mode = True
         #check pre_nms for testing when use_pre_nms is False in training: Result: AP50 drop 3.0
@@ -205,12 +206,13 @@ class Exp(MyExp):
                                 max_labels=50,
                                 flip_prob=self.flip_prob,
                                 hsv_prob=self.hsv_prob),
-                            mode='uniform',
-                            lframe=0,
-                            gframe=batch_size,
+                            mode='uniform_w_stride',
+                            lframe=self.lframe,
+                            gframe=self.gframe,
                             data_dir=self.data_dir,
                             name='train',  #change to your own dir name
-                            COCO_anno=os.path.join(self.data_dir, self.train_ann))
+                            COCO_anno=os.path.join(self.data_dir, self.train_ann),
+                            seq_stride=self.seq_stride)
 
         dataset = vid.get_trans_loader(batch_size=batch_size, data_num_workers=4, dataset=dataset)
         return dataset
@@ -220,14 +222,14 @@ class Exp(MyExp):
         assert batch_size == self.lframe_val+self.gframe_val
         dataset_val = vid.OVIS(data_dir=self.data_dir, #change to your own dataset
                                img_size=self.test_size,
-                               mode='uniform',
+                               mode='uniform_w_stride',
                                COCO_anno=os.path.join(self.data_dir, self.val_ann),
                                name='val', #change to your own dir name
                                lframe=self.lframe_val,
                                gframe=self.gframe_val,
                                preproc=Vid_Val_Transform(),
-                               val=True
-                               )
+                               val=True,
+                               seq_stride=self.seq_stride)
 
         val_loader = vid.get_trans_loader(batch_size=batch_size, data_num_workers=data_num_workers, dataset=dataset_val)
         return val_loader
