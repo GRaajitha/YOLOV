@@ -245,6 +245,7 @@ class Arg_VID(torchDataset):
         mode='random',
         COCO_anno = '',
         name = "tracking",
+        seq_stride=1,
     ):
         """
         COCO dataset initialization. Annotation data are read into memory by COCO API.
@@ -272,6 +273,7 @@ class Arg_VID(torchDataset):
         self.annotations = self._load_coco_annotations() # [xmin, ymin, xmax, ymax, cls]
         self.mode = mode  # random, continous, uniform
         self.preproc = preproc
+        self.seq_stride = seq_stride
 
         self.res = self.photo_to_sequence(lframe,gframe)
 
@@ -374,7 +376,6 @@ class Arg_VID(torchDataset):
                             res.append(tmp[(i + 1) * gframe:])
                 elif self.mode == 'uniform':
                     split_num = int(ele_len / (gframe))
-                    print("split_num: ", split_num)
                     all_uniform_frame = element[:split_num * gframe]
                     for i in range(split_num):
                         res.append(all_uniform_frame[i::split_num])
@@ -511,6 +512,9 @@ class OVIS(Arg_VID):
                     random.shuffle(element)
                     for i in range(split_num):
                         res.append(element[i * gframe:(i + 1) * gframe])
+                elif self.mode == 'uniform_w_stride':
+                    for i in range(len(element) - (gframe - 1) * self.seq_stride):
+                        res.append([element[i + j * self.seq_stride] for j in range(gframe)])
                 elif self.mode == 'uniform':
                     split_num = int(ele_len / (gframe))
                     all_uniform_frame = element[:split_num * gframe]
