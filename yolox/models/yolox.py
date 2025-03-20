@@ -26,13 +26,12 @@ class YOLOX(nn.Module):
 
         self.backbone = backbone
         self.head = head
-        self.count = 0
+        self.count = 1
 
     def forward(self, x, targets=None):
         # fpn output content features of [dark3, dark4, dark5]
-
         if targets is not None and self.count==0:
-            output_dir = f"./YOLOX_Outputs/inputViz/"
+            output_dir = f"{self.output_dir}/yolox_inputViz/"
             os.makedirs(output_dir, exist_ok=True)
             for i in range(x.shape[0]):
                 img = x[i]
@@ -53,11 +52,7 @@ class YOLOX(nn.Module):
                     img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0,0,255), 3)
 
                 # Save the image
-                cv2.imwrite(os.path.join(output_dir, f"image_{i}.png"), img)
-                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            print(f"Saved {x.shape[0]} images in '{output_dir}' directory.")
-            self.count += 1
-
+                # cv2.imwrite(os.path.join(output_dir, f"image_{i}.png"), img)
         fpn_outs = self.backbone(x)
 
         if self.training:
