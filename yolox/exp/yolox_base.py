@@ -163,7 +163,7 @@ class Exp(BaseExp):
 
         dataset = MosaicDetection(
             dataset,
-            mosaic=not no_aug,
+            mosaic=False,
             img_size=self.input_size,
             preproc=TrainTransform(
                 max_labels=120,

@@ -100,7 +100,7 @@ class Trainer:
         self.data_type = torch.float16 if args.fp16 else torch.float32
         self.input_size = exp.input_size
         self.best_ap = 0
-        self.wandb_exp_name = f"yolov++_base_x_s_uniform_w_stride3_gframe8_8cls_2kinp_trimmed100_fixedlen_02_27_split_vid_20ep_{date.today()}"
+        self.wandb_exp_name = ""#f"yolov++_swin_8gpu_2kinp_ovis_v7_{date.today()}"
 
         # metric record
         self.meter = MeterBuffer(window_size=exp.print_interval)

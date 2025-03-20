@@ -13,12 +13,12 @@ class Exp(MyExp):
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
 
         # Define yourself dataset path
-        self.num_classes = 3
-        self.data_dir = '/shared/users/raajitha/YOLOVexperiments/night_time_data/'
-        self.train_ann = "train_annotations_coco_fmt.json"
-        self.val_ann = "train_annotations_coco_fmt.json"
-        self.test_ann = "train_annotations_coco_fmt.json"
-        self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/nightime_yolox_s_overfit_20ep_{date.today()}"
+        self.num_classes = 16
+        self.data_dir = "/shared/vision/dataset/"
+        self.train_ann = "metadata/v7/subsample_10_percent_shuffled/train_annotations_coco_fmt.json"
+        self.val_ann = "metadata/v7/subsample_10_percent_shuffled/val_annotations_coco_fmt.json"
+        self.test_ann = "metadata/v7/subsample_10_percent_shuffled/test_annotations_coco_fmt.json"
+        self.output_dir = "./YOLOX_Outputs"
 
         self.train_name = ''
         self.val_name = ''
