@@ -7,7 +7,7 @@ import torch.nn as nn
 
 from .darknet import CSPDarknet
 from .network_blocks import BaseConv, CSPLayer, DWConv
-
+import torch.nn.functional as F
 
 class YOLOPAFPN(nn.Module):
     """
@@ -102,6 +102,8 @@ class YOLOPAFPN(nn.Module):
 
         fpn_out1 = self.reduce_conv1(f_out0)  # 512->256/16
         f_out1 = self.upsample(fpn_out1)  # 256/8
+        if input.shape[2] == 1080 and input.shape[3] == 1920:
+            x2 = F.pad(x2, (0, 0, 0, 1))
         f_out1 = torch.cat([f_out1, x2], 1)  # 256->512/8
         pan_out2 = self.C3_p3(f_out1)  # 512->256/8
 
