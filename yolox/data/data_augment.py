@@ -263,6 +263,35 @@ def preproc(img, input_size, swap=(2, 0, 1)):
     padded_img = np.ascontiguousarray(padded_img, dtype=np.float32)
     return padded_img, r
 
+def preproc_no_pad(img, input_size, swap=(2, 0, 1)):
+    """
+    Preprocess the image by resizing it directly to the target input size without padding.
+
+    Args:
+        img (numpy.ndarray): The input image.
+        input_size (tuple): Target size (height, width).
+        swap (tuple): Order of channels.
+
+    Returns:
+        resized_img (numpy.ndarray): Resized image with swapped channels.
+        scale_x (float): Scaling factor for width.
+        scale_y (float): Scaling factor for height.
+    """
+    orig_h, orig_w = img.shape[:2]
+    new_h, new_w = input_size
+
+    # Compute separate scaling factors for width and height
+    scale_x = new_w / orig_w
+    scale_y = new_h / orig_h
+
+    # Resize without padding
+    resized_img = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_LINEAR).astype(np.uint8)
+
+    # Swap channels if needed
+    resized_img = resized_img.transpose(swap)
+    resized_img = np.ascontiguousarray(resized_img, dtype=np.float32)
+
+    return resized_img, scale_x, scale_y
 
 class TrainTransform:
     def __init__(self, max_labels=50, flip_prob=0.5, hsv_prob=1.0):
@@ -275,7 +304,7 @@ class TrainTransform:
         labels = targets[:, 4].copy()
         if len(boxes) == 0:
             targets = np.zeros((self.max_labels, 5), dtype=np.float32)
-            image, r_o = preproc(image, input_dim)
+            image, rx_o, ry_o = preproc_no_pad(image, input_dim)
             return image, targets
 
         image_o = image.copy()
@@ -290,18 +319,24 @@ class TrainTransform:
         #     augment_hsv(image)
         # image_t, boxes = _mirror(image, boxes, self.flip_prob)
         height, width, _ = image.shape
-        image_t, r_ = preproc(image, input_dim)
+        image_t, rx_, ry_ = preproc_no_pad(image, input_dim)
         # boxes [xyxy] 2 [cx,cy,w,h]
         boxes = xyxy2cxcywh(boxes)
-        boxes *= r_
+        boxes[:,0] *= rx_
+        boxes[:,2] *= rx_
+        boxes[:,1] *= ry_
+        boxes[:,3] *= ry_
 
         mask_b = np.minimum(boxes[:, 2], boxes[:, 3]) > 1
         boxes_t = boxes[mask_b]
         labels_t = labels[mask_b]
 
         if len(boxes_t) == 0:
-            image_t, r_o = preproc(image_o, input_dim)
-            boxes_o *= r_o
+            image_t, rx_o, ry_o = preproc_no_pad(image_o, input_dim)
+            boxes_o[:,0] *= rx_o
+            boxes_o[:,2] *= rx_o
+            boxes_o[:,1] *= ry_o
+            boxes_o[:,3] *= ry_o
             boxes_t = boxes_o
             labels_t = labels_o
 
@@ -340,7 +375,7 @@ class ValTransform:
 
     # assume input is cv2 img for now
     def __call__(self, img, res, input_size):
-        img, _ = preproc(img, input_size, self.swap)
+        img, _ = preproc_no_pad(img, input_size, self.swap)
         if self.legacy:
             img = img[::-1, :, :].copy()
             img /= 255.0
@@ -372,7 +407,7 @@ class Vid_Val_Transform:
 
     # assume input is cv2 img for now
     def __call__(self, img, res, input_size):
-        img, r_ = preproc(img, input_size, self.swap)
+        img, r_ = preproc_no_pad(img, input_size, self.swap)
         if self.legacy:
             img = img[::-1, :, :].copy()
             img /= 255.0

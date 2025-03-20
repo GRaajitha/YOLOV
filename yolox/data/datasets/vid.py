@@ -442,7 +442,7 @@ class Arg_VID(torchDataset):
 
 
 class OVIS(Arg_VID):
-    def load_anno_from_ids(self, id_):
+    def load_anno_from_ids_old(self, id_):
         im_ann = self.coco.loadImgs(id_)[0]
         width = im_ann["width"]
         height = im_ann["height"]
@@ -481,6 +481,53 @@ class OVIS(Arg_VID):
         )
 
         return (res, img_info, resized_info, file_name)
+    
+    def load_anno_from_ids(self, id_):
+        im_ann = self.coco.loadImgs(id_)[0]
+        width = im_ann["width"]
+        height = im_ann["height"]
+
+        anno_ids = self.coco.getAnnIds(imgIds=[int(id_)], iscrowd=False)
+        annotations = self.coco.loadAnns(anno_ids)
+        objs = []
+
+        for obj in annotations:
+            x1 = max(0, obj["bbox"][0])
+            y1 = max(0, obj["bbox"][1])
+            x2 = min(width, x1 + max(0, obj["bbox"][2]))
+            y2 = min(height, y1 + max(0, obj["bbox"][3]))
+
+            if obj["area"] > 0 and x2 >= x1 and y2 >= y1:
+                obj["clean_bbox"] = [x1, y1, x2, y2]
+                objs.append(obj)
+
+        num_objs = len(objs)
+        res = np.zeros((num_objs, 5))
+
+        for ix, obj in enumerate(objs):
+            cls = self.class_ids.index(obj["category_id"])
+            res[ix, 0:4] = obj["clean_bbox"]
+            res[ix, 4] = cls
+
+        # Compute scale factors
+        scale_x = self.img_size[1] / width
+        scale_y = self.img_size[0] / height
+
+        # Adjust bounding boxes to the new image size
+        res[:, [0, 2]] *= scale_x  # Scale x1 and x2
+        res[:, [1, 3]] *= scale_y  # Scale y1 and y2
+
+        img_info = (height, width)
+        resized_info = (self.img_size[0], self.img_size[1])
+
+        file_name = (
+            im_ann["name"]
+            if "name" in im_ann
+            else "{:012}".format(id_) + ".jpg"
+        )
+
+        return res, img_info, resized_info, file_name
+
 
     def photo_to_sequence(self,lframe,gframe):
         '''
@@ -564,12 +611,13 @@ class OVIS(Arg_VID):
 
         height, width = img.shape[:2]
         img_info = (height, width)
-        r = min(self.img_size[0] / img.shape[0], self.img_size[1] / img.shape[1])
-        img = cv2.resize(
-            img,
-            (int(img.shape[1] * r), int(img.shape[0] * r)),
-            interpolation=cv2.INTER_LINEAR,
-        ).astype(np.uint8)
+        img = cv2.resize(img, (self.img_size[1], self.img_size[0]), interpolation=cv2.INTER_LINEAR).astype(np.uint8)
+        # r = min(self.img_size[0] / img.shape[0], self.img_size[1] / img.shape[1])
+        # img = cv2.resize(
+        #     img,
+        #     (int(img.shape[1] * r), int(img.shape[0] * r)),
+        #     interpolation=cv2.INTER_LINEAR,
+        # ).astype(np.uint8)
         return img, annos.copy(), img_info, img_path
 
 
