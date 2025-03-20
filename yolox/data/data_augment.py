@@ -375,7 +375,7 @@ class ValTransform:
 
     # assume input is cv2 img for now
     def __call__(self, img, res, input_size):
-        img, _ = preproc_no_pad(img, input_size, self.swap)
+        img, _, _ = preproc_no_pad(img, input_size, self.swap)
         if self.legacy:
             img = img[::-1, :, :].copy()
             img /= 255.0
@@ -407,7 +407,7 @@ class Vid_Val_Transform:
 
     # assume input is cv2 img for now
     def __call__(self, img, res, input_size):
-        img, r_ = preproc_no_pad(img, input_size, self.swap)
+        img, rx_, ry_ = preproc_no_pad(img, input_size, self.swap)
         if self.legacy:
             img = img[::-1, :, :].copy()
             img /= 255.0
@@ -415,7 +415,10 @@ class Vid_Val_Transform:
             img /= np.array([0.229, 0.224, 0.225]).reshape(3, 1, 1)
         boxes = res[:, :4].copy()
         labels = res[:, 4].copy()
-        boxes *= r_
+        boxes[:,0] *= rx_
+        boxes[:,2] *= rx_
+        boxes[:,1] *= ry_
+        boxes[:,3] *= ry_
         labels_t = np.expand_dims(labels, 1)
         targets_t = np.hstack((labels_t, boxes))
         return img, targets_t

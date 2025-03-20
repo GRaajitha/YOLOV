@@ -119,7 +119,6 @@ if __name__ == "__main__":
     exp = get_exp(args.exp_file, args.name)
 
     exp.merge(args.opts)
-    exp.test_size = (args.tsize, args.tsize)
     if not args.experiment_name:
         args.experiment_name = exp.exp_name
 

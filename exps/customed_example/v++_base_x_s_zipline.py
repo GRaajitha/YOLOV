@@ -23,8 +23,8 @@ class Exp(MyExp):
         self.train_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_train_split_video_sequences.json"
         self.val_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_val_split_video_sequences.json"
         self.test_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_test_split_video_sequences.json"
-        self.input_size = (1920, 1920)
-        self.test_size = (1920, 1920)
+        self.input_size = (1080, 1920)
+        self.test_size = (1080, 1920)
 
         self.max_epoch = 20
         self.basic_lr_per_img = 0.0005 / 16
