@@ -18,13 +18,13 @@ class Exp(MyExp):
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
 
         # Define yourself dataset path
-        self.num_classes = 8  
-        self.data_dir = "/shared/vision/dataset/"
-        self.train_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_train_split_video_sequences.json"
-        self.val_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_val_split_video_sequences.json"
-        self.test_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_test_split_video_sequences.json"
-        self.input_size = (1080, 1920)
-        self.test_size = (1080, 1920)
+        self.num_classes = 3  
+        self.data_dir = '/shared/users/raajitha/YOLOVexperiments/night_time_data/'
+        self.train_ann = "train_vid_coco_fmt.json"
+        self.val_ann = "train_vid_coco_fmt.json"
+        self.test_ann = "train_vid_coco_fmt.json"
+        self.input_size = (1920, 1920)
+        self.test_size = (1920, 1920)
 
         self.max_epoch = 20
         self.basic_lr_per_img = 0.0005 / 16
@@ -44,7 +44,7 @@ class Exp(MyExp):
         self.reconf = True
         self.loc_fuse_type = 'identity'
         self.output_dir = "./V++_outputs"
-        # self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/yolov++_base_x_s_uniform_w_stride{self.seq_stride}_gframe{self.gframe}_8cls_2kinp_trimmed100_fixedlen_02_27_split_vid_20ep_{date.today()}"
+        # self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/yolov++_base_x_s_nightime_overfit_20ep_{date.today()}"
         self.stem_lr_ratio = 0.1
         self.ota_mode = True
         #check pre_nms for testing when use_pre_nms is False in training: Result: AP50 drop 3.0
