@@ -1,12 +1,7 @@
 VID_classes = (
-    "Airplane",
-    "Paraglider",
-    "Helicopter",
-    "Zip",
-    "Ultralight",
-    "Glider",
-    "Bird",
-    "Balloon"
+    'aircraft',
+    'aircraft-nav-light',
+    'strobe',
 )
 
 # Epic_classes = (

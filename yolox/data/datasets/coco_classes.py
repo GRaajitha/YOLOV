@@ -3,12 +3,7 @@
 # Copyright (c) Megvii, Inc. and its affiliates.
 
 COCO_CLASSES = (
-    "Airplane",
-    "Paraglider",
-    "Helicopter",
-    "Zip",
-    "Ultralight",
-    "Glider",
-    "Bird",
-    "Balloon"
+    'aircraft',
+    'aircraft-nav-light',
+    'strobe',
 )

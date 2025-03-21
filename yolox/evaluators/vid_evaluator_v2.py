@@ -29,14 +29,9 @@ from yolox.utils import (
 )
 
 vid_classes = (
-    "Airplane",
-    "Paraglider",
-    "Helicopter",
-    "Zip",
-    "Ultralight",
-    "Glider",
-    "Bird",
-    "Balloon"
+    'aircraft',
+    'aircraft-nav-light',
+    'strobe',
 )
 
 
@@ -80,14 +75,9 @@ class VIDEvaluator:
                 'description': 'nothing',
             },
             'annotations': [],
-            'categories': [{'supercategory': 'none', 'id': 0, 'name': 'Airplane'},
-                            {'supercategory': 'none', 'id': 1, 'name': 'Paraglider'},
-                            {'supercategory': 'none', 'id': 2, 'name': 'Helicopter'},
-                            {'supercategory': 'none', 'id': 3, 'name': 'Zip'},
-                            {'supercategory': 'none', 'id': 4, 'name': 'Ultralight'},
-                            {'supercategory': 'none', 'id': 5, 'name': 'Glider'},
-                            {'supercategory': 'none', 'id': 6, 'name': 'Bird'},
-                            {'supercategory': 'none', 'id': 7, 'name': 'Balloon'}],
+            'categories': [{'supercategory': 'none', 'id': 0, 'name': 'aircraft'},
+                            {'supercategory': 'none', 'id': 1, 'name': 'aircraft-nav-light'},
+                            {'supercategory': 'none', 'id': 2, 'name': 'strobe'}],
             'images': [],
             'licenses': []
         }
@@ -96,14 +86,9 @@ class VIDEvaluator:
                 'description': 'nothing',
             },
             'annotations': [],
-            'categories': [{'supercategory': 'none', 'id': 0, 'name': 'Airplane'},
-                            {'supercategory': 'none', 'id': 1, 'name': 'Paraglider'},
-                            {'supercategory': 'none', 'id': 2, 'name': 'Helicopter'},
-                            {'supercategory': 'none', 'id': 3, 'name': 'Zip'},
-                            {'supercategory': 'none', 'id': 4, 'name': 'Ultralight'},
-                            {'supercategory': 'none', 'id': 5, 'name': 'Glider'},
-                            {'supercategory': 'none', 'id': 6, 'name': 'Bird'},
-                            {'supercategory': 'none', 'id': 7, 'name': 'Balloon'}],
+            'categories': [{'supercategory': 'none', 'id': 0, 'name': 'aircraft'},
+                            {'supercategory': 'none', 'id': 1, 'name': 'aircraft-nav-light'},
+                            {'supercategory': 'none', 'id': 2, 'name': 'strobe'}],
             'images': [],
             'licenses': []
         }
