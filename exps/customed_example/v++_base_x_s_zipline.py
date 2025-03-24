@@ -38,7 +38,7 @@ class Exp(MyExp):
         self.lframe_val = 0
         self.gframe = 8
         self.gframe_val = 8
-        self.seq_stride = 3
+        self.seq_stride = 8
         self.use_loc_emd = False
         self.iou_base = False
         self.reconf = True
@@ -63,7 +63,7 @@ class Exp(MyExp):
         if self.backbone_name == 'MCSP':
             in_channels = [256, 512, 1024]
             from yolox.models import YOLOPAFPN
-            backbone = YOLOPAFPN(self.depth, self.width, in_channels=in_channels)
+            backbone = YOLOPAFPN(self.depth, self.width, in_channels=in_channels, input_size=self.input_size)
         elif 'Swin' in self.backbone_name:
             from yolox.models import YOLOPAFPN_Swin
 

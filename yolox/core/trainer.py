@@ -40,7 +40,7 @@ class Trainer:
         self.exp = exp
         self.args = args
         self.args.logger = "wandb"
-        self.wandb_name = f"nightime_yolox_s_overfit_20ep_{date.today()}"
+        self.wandb_name = f"yoloxs_v7_8cls_1080x1920_20ep_{date.today()}"
 
         # training related attr
         self.max_epoch = exp.max_epoch

@@ -26,7 +26,8 @@ class YOLOX(nn.Module):
 
         self.backbone = backbone
         self.head = head
-        self.count = 1
+        self.count = 0
+        self.output_dir = "./YOLOX_Outputs"
 
     def forward(self, x, targets=None):
         # fpn output content features of [dark3, dark4, dark5]
@@ -42,7 +43,7 @@ class YOLOX(nn.Module):
                 img = img.transpose(1, 2, 0)
                 img = np.ascontiguousarray(img)
                 # Draw bounding boxes
-                for j in range(targets.shape[1]):
+                for j in range(targets[i].shape[0]):
                     cls, c_x, c_y, w, h = targets[i, j]
                     c_x, c_y, w, h = map(int, [c_x, c_y, w/2, h/2])
                     xmin = c_x - w
@@ -53,6 +54,8 @@ class YOLOX(nn.Module):
 
                 # Save the image
                 # cv2.imwrite(os.path.join(output_dir, f"image_{i}.png"), img)
+            self.count += 1
+
         fpn_outs = self.backbone(x)
 
         if self.training:

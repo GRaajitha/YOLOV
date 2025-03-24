@@ -127,7 +127,7 @@ class Exp(BaseExp):
 
         if getattr(self, "model", None) is None:
             in_channels = [256, 512, 1024]
-            backbone = YOLOPAFPN(self.depth, self.width, in_channels=in_channels, act=self.act)
+            backbone = YOLOPAFPN(self.depth, self.width, in_channels=in_channels, act=self.act, input_size=self.input_size)
             head = YOLOXHead(self.num_classes, self.width, in_channels=in_channels, act=self.act,debug=self.debug)
             self.model = YOLOX(backbone, head)
 
@@ -163,7 +163,7 @@ class Exp(BaseExp):
 
         dataset = MosaicDetection(
             dataset,
-            mosaic=False,
+            mosaic=not no_aug,
             img_size=self.input_size,
             preproc=TrainTransform(
                 max_labels=120,
