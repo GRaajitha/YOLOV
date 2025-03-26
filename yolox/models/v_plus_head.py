@@ -44,6 +44,7 @@ class YOLOVHead(nn.Module):
             lmode=False,
             both_mode=False,
             localBlocks=1,
+            input_shape=(1080, 1920),
             **kwargs
     ):
         """
@@ -64,6 +65,7 @@ class YOLOVHead(nn.Module):
         self.gmode = gmode
         self.lmode = lmode
         self.both_mode = both_mode
+        self.input_shape = input_shape
 
         # for visualization
         # self.count = 0
@@ -392,7 +394,7 @@ class YOLOVHead(nn.Module):
         if sum(preds_per_frame) == 0 and self.training:
             return torch.tensor(0),0,0,0,0,1,0,0,0
 
-        if not self.training and imgs.shape[0] == 1:
+        if not self.training and xin[0].shape[0] == 1:
             if self.kwargs.get("onnx_export", False):
                 return pred_result
             else:
@@ -429,7 +431,7 @@ class YOLOVHead(nn.Module):
         locs = locs.view(1, -1, 4)
 
 
-        more_args = {'width': imgs.shape[-1], 'height': imgs.shape[-2], 'fg_score': fg_scores,
+        more_args = {'width': self.input_shape[1], 'height':self.input_shape[0], 'fg_score': fg_scores,
                      'cls_score': cls_scores, 'all_scores': all_scores, 'lframe': lframe,
                      'afternum': self.Afternum, 'gframe': gframe, 'use_score': self.use_score}
 
