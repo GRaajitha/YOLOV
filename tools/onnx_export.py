@@ -111,11 +111,11 @@ def make_inputs(pre_proc_img):
     if exp.backbone_only:
         input = input.unsqueeze(0).cuda()
         data = np.asarray(input.cpu().numpy(), dtype=np.float32)
-        data.tofile(f"{args.outdir}/preproc_single_1920_input.dat")
+        data.tofile(f"{args.outdir}/preproc_single_{pre_proc_img.shape[1]}_input.dat")
     else:
         input = torch.stack([input] * exp.gframe, dim=0).cuda()
         data = np.asarray(input.cpu().numpy(), dtype=np.float32)
-        data.tofile(f"{args.outdir}/preproc_batch{exp.gframe}_1920_input.dat")
+        data.tofile(f"{args.outdir}/preproc_batch{exp.gframe}_{{pre_proc_img.shape[1]}}_input.dat")
     # rand_img = torch.rand((exp.gframe, 3, exp.input_size[1], exp.input_size[0])).cuda()
     return input
 
