@@ -54,9 +54,13 @@ class Exp(MyExp):
         self.minimal_limit = 0
         self.maximal_limit = 100
         self.decouple_reg = True
+        
+        # onnx_export options
         self.onnx_export=False
         # topk 
         self.defualt_pre=100
+        self.backbone_only = False
+        self.head_only = False
 
     def get_model(self):
         # rewrite get model func from yolox
@@ -138,7 +142,7 @@ class Exp(MyExp):
                          use_score=self.use_score, defualt_p=self.defualt_p, sim_thresh=self.sim_thresh,
                          pre_nms=self.pre_nms, ave=self.ave, defulat_pre=self.defualt_pre, test_conf=self.test_conf,
                          use_mask=self.use_mask,gmode=self.gmode,lmode=self.lmode,both_mode=self.both_mode,
-                         localBlocks = self.localBlocks,**more_args)
+                         localBlocks = self.localBlocks, input_shape=self.input_size, **more_args)
         for layer in head.stems.parameters():
             layer.requires_grad = False  # set stem fixed
         for layer in head.reg_convs.parameters():
@@ -149,7 +153,7 @@ class Exp(MyExp):
         for layer in head.reg_preds.parameters():
             layer.requires_grad = False
 
-        self.model = YOLOV(backbone, head)
+        self.model = YOLOV(backbone, head, backbone_only=self.backbone_only, head_only=self.head_only)
 
         def fix_bn(m):
             classname = m.__class__.__name__
