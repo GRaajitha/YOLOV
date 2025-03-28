@@ -117,6 +117,12 @@ class Trainer:
         )
 
         if val:
+            if self.args.logger == "wandb":
+                wandb_params = dict()
+                for k, v in zip(self.args.opts[0::2], self.args.opts[1::2]):
+                    if k.startswith("wandb-"):
+                        wandb_params.update({k.lstrip("wandb-"): v})
+                self.wandb_logger = WandbLogger(name=self.wandb_exp_name,config=vars(self.exp), **wandb_params)
             self.evaluate()
             return
 
@@ -401,7 +407,6 @@ class Trainer:
         ap50_95 = summary[0]
         ap50 = summary[1]
 
-        summary_info = summary[-1]
         if self.rank == 0:
             # detail_info = extract_values(summary_info)
             if self.args.logger == "tensorboard":
@@ -413,7 +418,7 @@ class Trainer:
                     "val/COCOAP50_95": ap50_95,
                     "epoch": self.epoch + 1,
                 })
-            logger.info("\n" + str(summary))
+            logger.info('\n'+ str(summary[-1]))
 
         synchronize()
         self.save_ckpt("last_epoch", ap50_95 > self.best_ap)
@@ -443,6 +448,12 @@ class Trainer:
         self.model.train()
         if self.rank == 0:
             logger.info('\n'+ str(summary[-1]))
+            ap50_95 = summary[0]
+            ap50 = summary[1]
+            self.wandb_logger.log_metrics({
+                    "val/COCOAP50": ap50,
+                    "val/COCOAP50_95": ap50_95
+                })
         synchronize()
         return None
 

@@ -23,7 +23,7 @@ def make_parser():
     parser = argparse.ArgumentParser("YOLOX train parser")
     parser.add_argument("-expn", "--experiment-name", type=str, default=None)
     parser.add_argument("-n", "--name", type=str, default=None, help="model name")
-    parser.add_argument("--tsize", default=576, type=int, help="test img size")
+    # parser.add_argument("--tsize", default=576, type=int, help="test img size")
     # distributed
     parser.add_argument(
         "--dist-backend", default="nccl", type=str, help="distributed backend"
@@ -98,11 +98,11 @@ def make_parser():
         nargs=argparse.REMAINDER,
     )
 
-    parser.add_argument('--lframe', default=0,type=int, help='local frame num')
-    parser.add_argument('--gframe', default=32,type=int, help='global frame num')
-    parser.add_argument('--mode', default='random', help='frame sample mode')
-    parser.add_argument('--tnum', default=-1, help='vid test sequences')
-    parser.add_argument('--formal', default=False, action="store_true",help='vid test sequences')
+    # parser.add_argument('--lframe', default=0,type=int, help='local frame num')
+    # parser.add_argument('--gframe', default=32,type=int, help='global frame num')
+    # parser.add_argument('--mode', default='random', help='frame sample mode')
+    # parser.add_argument('--tnum', default=-1, help='vid test sequences')
+    # parser.add_argument('--formal', default=False, action="store_true",help='vid test sequences')
 
     return parser
 
@@ -123,42 +123,46 @@ def main(exp, args):
     configure_nccl()
     configure_omp()
     cudnn.benchmark = True
-    lframe = int(args.lframe)
-    gframe = int(args.gframe)
+    # lframe = int(args.lframe)
+    # gframe = int(args.gframe)
 
-    dataset_val = vid.VIDDataset(file_path='./yolox/data/datasets/val_seq.npy',
-                                 img_size=(args.tsize, args.tsize), preproc=Vid_Val_Transform(), lframe=lframe,
-                                 gframe=gframe, val=True,mode=args.mode,dataset_pth=exp.data_dir,tnum=int(args.tnum),
-                                 formal=args.formal,local_stride=exp.local_stride,)
-    val_loader = vid.vid_val_loader(batch_size=lframe + gframe, data_num_workers=4, dataset=dataset_val,)
+    # dataset_val = vid.VIDDataset(file_path='./yolox/data/datasets/val_seq.npy',
+    #                              img_size=(args.tsize, args.tsize), preproc=Vid_Val_Transform(), lframe=lframe,
+    #                              gframe=gframe, val=True,mode=args.mode,dataset_pth=exp.data_dir,tnum=int(args.tnum),
+    #                              formal=args.formal,local_stride=exp.local_stride,)
+    # val_loader = vid.vid_val_loader(batch_size=lframe + gframe, data_num_workers=4, dataset=dataset_val,)
 
 
     ##  customed dataset here:
-    # dataset_val = vid.OVIS(data_dir='/opt/dataset/OVIS', img_size=exp.test_size, mode='random',
-    #                        COCO_anno='/opt/dataset/OVIS/ovis_train.json', name='train',
-    #                        lframe=0, gframe=gframe, preproc=Vid_Val_Transform()
-    #                        )
-    # val_loader = vid.vid_val_loader(batch_size=lframe + gframe, data_num_workers=4, dataset=dataset_val, )
+    dataset_val = vid.OVIS(data_dir=exp.data_dir, #change to your own dataset
+                               img_size=exp.test_size,
+                               mode='uniform_w_stride',
+                               COCO_anno=os.path.join(exp.data_dir, exp.val_ann),
+                               name='val', #change to your own dir name
+                               lframe=exp.lframe_val,
+                               gframe=exp.gframe_val,
+                               preproc=Vid_Val_Transform(),
+                               val=True,
+                               seq_stride=exp.seq_stride)
+
+    val_loader = vid.get_trans_loader(batch_size=exp.lframe_val + exp.gframe_val, data_num_workers=8, dataset=dataset_val)
 
     trainer = Trainer(exp, args, val_loader, val=True)
-
 
 if __name__ == "__main__":
     args = make_parser().parse_args()
 
     exp = get_exp(args.exp_file, args.name)
-    exp.test_size = (args.tsize, args.tsize)
+    # exp.test_size = (args.tsize, args.tsize)
 
-
-    if args.lframe != None: exp.lframe_val = int(args.lframe)
-    if args.gframe != None: exp.gframe_val = int(args.gframe)
-    exp.merge(args.opts)
+    # if args.lframe != None: exp.lframe_val = int(args.lframe)
+    # if args.gframe != None: exp.gframe_val = int(args.gframe)
+    # exp.merge(args.opts)
     if not args.experiment_name:
         args.experiment_name = exp.exp_name
 
     num_gpu = get_num_devices() if args.devices is None else args.devices
     assert num_gpu <= get_num_devices()
-    args.machine_rank = 1
     dist_url = "auto" #if args.dist_url is None else args.dist_url
     launch(
         main,
