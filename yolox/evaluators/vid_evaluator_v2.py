@@ -181,6 +181,7 @@ class VIDEvaluator:
             
             #vizualize
             if cur_iter == 0:
+                output_dir = "./v++_Outputs"
                 for i in range(imgs.shape[0]):
                     img = imgs[i]
                     img = img.cpu().detach().numpy()
@@ -206,6 +207,7 @@ class VIDEvaluator:
                             # img = cv2.putText(img, str(f"{cls.item()}_{score}"), (xmin+5, ymin+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2)
 
                     # log the image
+                    cv2.imwrite(f"{output_dir}/image_{i}.png", img)
                     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                     wandb.log({f"inferences/{i}": wandb.Image(img)})
 

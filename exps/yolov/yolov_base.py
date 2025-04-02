@@ -165,25 +165,25 @@ class Exp(BaseExp):
         # --------------  training config --------------------- #
 
         # epoch number used for warmup
-        self.warmup_epochs = 1
+        self.warmup_epochs = 3
         # max training epoch
-        self.max_epoch = 7
+        self.max_epoch = 40
         # minimum learning rate during warmup
-        self.warmup_lr = 0
-        self.min_lr_ratio = 0.1
+        self.warmup_lr = 0.0000001
+        self.min_lr_ratio = 0.00000005
         # learning rate for one image. During training, lr will multiply batchsize.
         self.basic_lr_per_img = 0.002 / 64.0
         # name of LRScheduler
         self.scheduler = "yoloxwarmcos"
         # last #epoch to close augmention like mosaic
-        self.no_aug_epochs = 2
+        self.no_aug_epochs = 5
         # apply EMA during training
         self.ema = True
 
         # weight decay of optimizer
         self.weight_decay = 5e-4
         # momentum of optimizer
-        self.momentum = 0.9
+        self.momentum = 0.8
         # log period in iter, for example,
         # if set to 1, user could see log every iteration.
         self.print_interval = 10
