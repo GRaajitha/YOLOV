@@ -15,23 +15,23 @@ class Exp(MyExp):
         # Define yourself dataset path
         self.num_classes = 8  
         self.data_dir = "/shared/vision/dataset/"
-        self.train_ann = "metadata/v7_8_cls/coco_vid/trimmed1000_64-500seq_train_coco_vid_06_06.json"
-        self.val_ann = "metadata/v7_8_cls/coco_vid/trimmed1000_64-500seq_val_coco_vid_06_06.json"
-        self.test_ann = "metadata/v7_8_cls/coco_vid/trimmed1000_64-500seq_test_coco_vid_06_06.json"
-        self.input_size = (1080, 1920)
-        self.test_size = (1080, 1920)
+        self.train_ann = "metadata/v7_8_cls/train_annotations_coco_fmt.json"
+        self.val_ann = "metadata/v7_8_cls/val_annotations_coco_fmt.json"
+        self.test_ann = "metadata/v7_8_cls/test_annotations_coco_fmt.json"
+        self.input_size = (2160, 3840)
+        self.test_size = (2160, 3840)
         self.train_name = ''
         self.val_name = ''
         self.wandb_name = f"yoloxs_v7_8cls_1080x1920_20ep_trimmed1000_64-500seq_{date.today()}"
         self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/{self.wandb_name}"
 
-        self.max_epoch = 20
+        self.max_epoch = 40
         self.no_aug_epochs = 10
         self.warmup_epochs = 3
         self.eval_interval = 1
         self.print_interval = 10
         self.min_lr_ratio = 0.00000005
-        self.basic_lr_per_img = 0.00003125
+        self.basic_lr_per_img = 0.002 / 64.0
         self.multiscale_range = 5
         self.test_conf = 0.001
         self.nmsthre = 0.5

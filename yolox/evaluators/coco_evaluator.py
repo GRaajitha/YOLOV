@@ -542,9 +542,9 @@ class COCOEvaluator:
             model(x)
             model = model_trt
 
-        for cur_iter, (imgs, _, info_imgs, ids) in enumerate(
+        for cur_iter, (imgs, label, info_imgs, ids) in enumerate(
             progress_bar(self.dataloader)
-        ):
+        ): 
             with torch.no_grad():
                 imgs = imgs.type(tensor_type)
 
