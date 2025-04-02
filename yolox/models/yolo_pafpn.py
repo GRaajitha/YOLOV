@@ -98,14 +98,19 @@ class YOLOPAFPN(nn.Module):
 
         fpn_out0 = self.lateral_conv0(x0)  # 1024->512/32
         f_out0 = self.upsample(fpn_out0)  # 512/16
+        if self.input_size[0] != self.input_size[1] and input.shape[2] == self.input_size[0] and input.shape[3] == self.input_size[1]:
+            pad_size = f_out0.shape[2] - x1.shape[2]
+            x1 = F.pad(x1, (0, 0, 0, pad_size))
         f_out0 = torch.cat([f_out0, x1], 1)  # 512->1024/16
         f_out0 = self.C3_p4(f_out0)  # 1024->512/16
 
         fpn_out1 = self.reduce_conv1(f_out0)  # 512->256/16
         f_out1 = self.upsample(fpn_out1)  # 256/8
-        if input.shape[2] == self.input_size[0] and input.shape[3] == self.input_size[1] and self.input_size[0] != self.input_size[1]:
-            x2 = F.pad(x2, (0, 0, 0, 1))
+        if self.input_size[0] != self.input_size[1] and input.shape[2] == self.input_size[0] and input.shape[3] == self.input_size[1]:
+            pad_size = f_out1.shape[2] - x2.shape[2]
+            x2 = F.pad(x2, (0, 0, 0, pad_size))
         f_out1 = torch.cat([f_out1, x2], 1)  # 256->512/8
+
         pan_out2 = self.C3_p3(f_out1)  # 512->256/8
 
         p_out1 = self.bu_conv2(pan_out2)  # 256->256/16

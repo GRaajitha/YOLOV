@@ -230,9 +230,9 @@ class COCOEvaluator:
             model(x)
             model = model_trt
 
-        for cur_iter, (imgs, _, info_imgs, ids) in enumerate(
+        for cur_iter, (imgs, label, info_imgs, ids) in enumerate(
             progress_bar(self.dataloader)
-        ):
+        ): 
             with torch.no_grad():
                 imgs = imgs.type(tensor_type)
 
@@ -260,7 +260,7 @@ class COCOEvaluator:
                     nms_end = time_synchronized()
                     nms_time += nms_end - infer_end
 
-                            #vizualize
+            #vizualize
             if cur_iter == 0:
                 output_dir = "./YOLOX_Outputs/eval_viz"
                 os.makedirs(output_dir, exist_ok=True)
@@ -278,12 +278,12 @@ class COCOEvaluator:
                         xmin, ymin, xmax, ymax = map(int, [xmin, ymin, xmax, ymax])
                         score = obj_score * cls_score
                         score = round(score.item(), 3)
-                        #if score > 0.001:
-                        img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0,0,255), 3)
-                        # img = cv2.putText(img, str(f"{cls.item()}_{score}"), (xmin+5, ymin+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2)
+                        if score > self.confthre:
+                            img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0,0,255), 3)
+                            img = cv2.putText(img, str(f"{cls.item()}_{score}"), (xmin+5, ymin+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2)
 
                     # log the image
-                    cv2.imwrite(f"{output_dir}/image_{i}.png", img)
+                    # cv2.imwrite(f"{output_dir}/image_{i}.png", img)
 
             data_list.extend(self.convert_to_coco_format(outputs, info_imgs, ids))
 
