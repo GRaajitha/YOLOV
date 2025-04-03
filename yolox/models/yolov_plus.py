@@ -76,6 +76,7 @@ class YOLOV(nn.Module):
                 "loss_refined_iou":loss_refined_iou,
                 "loss_refined_obj":loss_refined_obj
             }
+            return outputs
         else:
             if not self.backbone_only and not self.head_only:
                 fpn_outs = self.backbone(x)
