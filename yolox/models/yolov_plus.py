@@ -50,7 +50,7 @@ class YOLOV(nn.Module):
                         img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0,0,255), 3)
 
                     # Save the image
-                    # cv2.imwrite(os.path.join(output_dir, f"image_{i}.png"), img)
+                    cv2.imwrite(os.path.join(output_dir, f"image_{i}.png"), img)
                     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                     wandb.log({f"inputs/{i}": wandb.Image(img)})
                 # print(f"Saved {x.shape[0]} images in '{output_dir}' directory.")
