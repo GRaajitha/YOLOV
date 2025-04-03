@@ -18,6 +18,7 @@ from yolox.utils import configure_nccl, configure_omp, get_num_devices
 from yolox.data.data_augment import ValTransform,Vid_Val_Transform
 from yolox.data.datasets import vid
 import os
+
 def make_parser():
     parser = argparse.ArgumentParser("YOLOX train parser")
     parser.add_argument("-expn", "--experiment-name", type=str, default=None)

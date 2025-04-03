@@ -159,7 +159,7 @@ class Trainer:
         data_end_time = time.time()
 
         with torch.cuda.amp.autocast(enabled=self.amp_training):
-            outputs = self.model(inps, targets, lframe = self.exp.lframe,gframe = self.exp.gframe)
+            outputs = self.model(inps, targets, lframe = self.exp.lframe, gframe = self.exp.gframe)
 
         loss = outputs["total_loss"]
 
