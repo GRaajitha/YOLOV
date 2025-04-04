@@ -146,6 +146,7 @@ def imageflow_demo(predictor, vis_folder, current_time, args,exp):
 
     os.makedirs(save_folder, exist_ok=True)
     ratio = min(predictor.test_size[0] / height, predictor.test_size[1] / width)
+    ratio_y, ratio_x = predictor.test_size[0] / height, predictor.test_size[1] / width
     vid_save_path = os.path.join(save_folder, args.path.split("/")[-1])
     # img_save_path = save_folder
     logger.info(f"video save_path is {vid_save_path}")
@@ -218,7 +219,7 @@ def imageflow_demo(predictor, vis_folder, current_time, args,exp):
     for img_idx,(output,img) in enumerate(zip(outputs,ori_frames[:len(outputs)])):
         if args.post:
             ratio = 1
-        result_frame = predictor.visual(output,img,ratio,cls_conf=args.conf)
+        result_frame = predictor.visual(output,img,ratio_y, ratio_x,cls_conf=args.conf)
         if args.save_result:
             vid_writer.write(result_frame)
             # cv2.imwrite(os.path.join(img_save_path, str(img_idx) + '.jpg'), result_frame)
@@ -244,8 +245,6 @@ def main(exp, args):
         exp.test_conf = args.conf
     if args.nms is not None:
         exp.nmsthre = args.nms
-    if args.tsize is not None:
-        exp.test_size = (args.tsize, args.tsize)
 
     model = exp.get_model()
     logger.info("Model Summary: {}".format(get_model_info(model, exp.test_size)))

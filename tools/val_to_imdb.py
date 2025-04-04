@@ -205,14 +205,17 @@ class Predictor(object):
             pred_res.append(pred)
         return pred_res
 
-    def visual(self, output, img, ratio, cls_conf=0.0):
+    def visual(self, output, img, ratio_y, ratio_x, cls_conf=0.0):
 
         if output is None:
             return img
         bboxes = output[:, 0:4]
 
         # preprocessing: resize
-        bboxes /= ratio
+        bboxes[:, 0] /= ratio_x
+        bboxes[:, 1] /= ratio_y
+        bboxes[:, 2] /= ratio_x
+        bboxes[:, 3] /= ratio_y
 
         cls = output[:, 6]
         scores = output[:, 4] * output[:, 5]

@@ -24,8 +24,8 @@ from yolox.utils import (
     gather,
     is_main_process,
     postprocess,
-    synchronize,
     time_synchronized,
+    synchronize,
     xyxy2xywh
 )
 
@@ -304,14 +304,18 @@ class COCOEvaluator:
                 _, tmp = tempfile.mkstemp()
                 json.dump(data_dict, open(tmp, "w"))
                 cocoDt = cocoGt.loadRes(tmp)
-            try:
-                from yolox.layers import COCOeval_opt as COCOeval
-            except ImportError:
-                from pycocotools.cocoeval import COCOeval
+            # try:
+            #     from yolox.layers import COCOeval_opt as COCOeval
+            # except ImportError:
+            #     from pycocotools.cocoeval import COCOeval
 
-                logger.warning("Use standard COCOeval.")
+            #     logger.warning("Use standard COCOeval.")
+
+            from tools.cocoeval_custom import COCOeval
 
             cocoEval = COCOeval(cocoGt, cocoDt, annType[1])
+            cocoEval.params.iouThrs = np.array([0.2, 0.5, 0.75])
+            cocoEval.params.useCats = 1  # Enable category-based evaluation
             cocoEval.evaluate()
             cocoEval.accumulate()
             redirect_string = io.StringIO()
