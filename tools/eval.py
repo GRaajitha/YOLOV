@@ -59,7 +59,7 @@ def make_parser():
     parser.add_argument("-c", "--ckpt", default=None, type=str, help="ckpt for eval")
     parser.add_argument("--conf", default=None, type=float, help="test conf")
     parser.add_argument("--nms", default=None, type=float, help="test nms threshold")
-    parser.add_argument("--tsize", default=None, type=int, help="test img size")
+    # parser.add_argument("--tsize", default=None, type=int, help="test img size")
     parser.add_argument("--seed", default=None, type=int, help="eval seed")
     parser.add_argument(
         "--fp16",
@@ -142,8 +142,8 @@ def main(exp, args, num_gpu):
         exp.test_conf = args.conf
     if args.nms is not None:
         exp.nmsthre = args.nms
-    if args.tsize is not None:
-        exp.test_size = (args.tsize, args.tsize)
+    # if args.tsize is not None:
+    #     exp.test_size = (args.tsize, args.tsize)
 
     model = exp.get_model()
     logger.info("Model Summary: {}".format(get_model_info(model, exp.test_size)))
@@ -164,7 +164,7 @@ def main(exp, args, num_gpu):
             ckpt_file = args.ckpt
         logger.info("loading checkpoint from {}".format(ckpt_file))
         loc = "cuda:{}".format(rank)
-        ckpt = torch.load(ckpt_file, map_location=loc)
+        ckpt = torch.load(ckpt_file, map_location=loc, weights_only=False)
         model.load_state_dict(ckpt["model"])
         logger.info("loaded checkpoint done.")
 

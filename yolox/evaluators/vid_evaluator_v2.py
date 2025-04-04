@@ -257,7 +257,7 @@ class VIDEvaluator:
                 }  # COCO json format
                 self.box_id = self.box_id + 1
                 label_list.append(label_pred_data)
-            self.vid_to_coco['images'].append({'id': self.id, "file_name": path})
+            self.vid_to_coco['images'].append({'id': self.id, "file_name": path, "width": info_img[1], "height": info_img[0]})
 
             if output is None:
                 self.id = self.id + 1
@@ -399,8 +399,9 @@ class VIDEvaluator:
             #     from pycocotools.cocoeval import COCOeval
 
             #     logger.warning("Use standard COCOeval.")
-            from pycocotools.cocoeval import COCOeval
+            from tools.cocoeval_custom import COCOeval
             cocoEval = COCOeval(cocoGt, cocoDt, annType[1])
+            cocoEval.params.iouThrs = np.array([0.2, 0.5, 0.75])
             cocoEval.evaluate()
             cocoEval.accumulate()
             redirect_string = io.StringIO()
