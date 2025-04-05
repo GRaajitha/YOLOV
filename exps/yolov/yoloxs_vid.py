@@ -13,16 +13,16 @@ class Exp(MyExp):
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
 
         # Define yourself dataset path
-        self.num_classes = 8  
-        self.data_dir = "/shared/vision/dataset/"
-        self.train_ann = "metadata/v7_8_cls/train_annotations_coco_fmt.json"
-        self.val_ann = "metadata/v7_8_cls/val_annotations_coco_fmt.json"
-        self.test_ann = "metadata/v7_8_cls/test_annotations_coco_fmt.json"
+        self.num_classes = 3  
+        self.data_dir = '/shared/users/raajitha/YOLOVexperiments/night_time_data/'
+        self.train_ann = "03_20_annotations_coco_fmt.json"
+        self.val_ann = "03_20_annotations_coco_fmt.json"
+        self.test_ann = ""
         self.input_size = (1080, 1920)
         self.test_size = (1080, 1920)
         self.train_name = ''
         self.val_name = ''
-        self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/yoloxs_v7_8cls_1080x1920_20ep_{date.today()}"
+        self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/yoloxs_night_overfit_1080x1920_03_20anns_20ep_{date.today()}"
 
         self.max_epoch = 20
         self.no_aug_epochs = 10
