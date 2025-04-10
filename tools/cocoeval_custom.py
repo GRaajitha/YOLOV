@@ -424,7 +424,102 @@ class COCOeval:
         toc = time.time()
         print('DONE (t={:0.2f}s).'.format( toc-tic))
 
-    def summarize(self):
+    def computeConfusionMatrix(self):
+        '''
+        Compute confusion matrix for object detection evaluation.
+        Matrix is of size (num_classes + 1) x (num_classes + 1)
+        where the extra row/column is for background/incorrect detections
+        '''
+        p = self.params
+        num_classes = len(p.catIds)
+        conf_matrix = np.zeros((num_classes + 1, num_classes + 1), dtype=np.int32)
+        
+        # Process each image
+        for imgId in p.imgIds:
+            # Get all ground truth and detections for this image
+            gt_all = []
+            dt_all = []
+            for catId in p.catIds:
+                if p.useCats:
+                    gt = self._gts[imgId, catId]
+                    dt = self._dts[imgId, catId]
+                else:
+                    gt = [_ for cId in p.catIds for _ in self._gts[imgId, cId]]
+                    dt = [_ for cId in p.catIds for _ in self._dts[imgId, cId]]
+                gt_all.extend(gt)
+                dt_all.extend(dt)
+            
+            if len(gt_all) == 0 and len(dt_all) == 0:
+                continue
+            
+            # Sort detections by score
+            dt_all = sorted(dt_all, key=lambda x: -x['score'])
+            
+            # Initialize arrays to track matches
+            gt_matched = [False] * len(gt_all)
+            dt_matched = [False] * len(dt_all)
+            
+            # Match detections to ground truth
+            for i, d in enumerate(dt_all):
+                best_iou = 0.5  # IoU threshold
+                best_gt_idx = -1
+                
+                for j, g in enumerate(gt_all):
+                    if gt_matched[j]:
+                        continue
+                    
+                    # Calculate IoU between detection and ground truth
+                    if p.iouType == 'bbox':
+                        # Calculate bbox IoU
+                        dt_bbox = d['bbox']
+                        gt_bbox = g['bbox']
+                        x1 = max(dt_bbox[0], gt_bbox[0])
+                        y1 = max(dt_bbox[1], gt_bbox[1])
+                        x2 = min(dt_bbox[0] + dt_bbox[2], gt_bbox[0] + gt_bbox[2])
+                        y2 = min(dt_bbox[1] + dt_bbox[3], gt_bbox[1] + gt_bbox[3])
+                        
+                        if x2 < x1 or y2 < y1:
+                            iou = 0
+                        else:
+                            intersection = (x2 - x1) * (y2 - y1)
+                            dt_area = dt_bbox[2] * dt_bbox[3]
+                            gt_area = gt_bbox[2] * gt_bbox[3]
+                            union = dt_area + gt_area - intersection
+                            iou = intersection / union
+                    else:
+                        # For segmentation, use precomputed IoUs
+                        iou = self.ious[imgId, d['category_id']][i, j]
+                    
+                    if iou > best_iou:
+                        best_iou = iou
+                        best_gt_idx = j
+                
+                if best_gt_idx >= 0:
+                    gt_matched[best_gt_idx] = True
+                    dt_matched[i] = True
+                    
+                    # Get true and predicted class indices
+                    true_class = p.catIds.index(gt_all[best_gt_idx]['category_id'])
+                    pred_class = p.catIds.index(dt_all[i]['category_id'])
+                    
+                    # Update confusion matrix
+                    conf_matrix[true_class, pred_class] += 1
+                else:
+                    # False positive - detection not matched to any ground truth
+                    # Only consider detections with score > 0.1 as valid false positives
+                    if dt_all[i]['score'] > 0.1:
+                        pred_class = p.catIds.index(dt_all[i]['category_id'])
+                        conf_matrix[-1, pred_class] += 1
+            
+            # Count false negatives (unmatched ground truth)
+            for j, g in enumerate(gt_all):
+                if not gt_matched[j]:
+                    true_class = p.catIds.index(g['category_id'])
+                    conf_matrix[true_class, -1] += 1
+        
+        return conf_matrix
+
+    def summarize(self, compute_confidence_matrix=False):
         '''
         Compute and display summary metrics for evaluation results.
         Note this functin can *only* be applied on the default parameter setting
@@ -496,6 +591,14 @@ class COCOeval:
         elif iouType == 'keypoints':
             summarize = _summarizeKps
         self.stats = summarize()
+        
+        if compute_confidence_matrix:
+            # Compute and print confusion matrix
+            self.conf_matrix = self.computeConfusionMatrix()
+            print("\nConfusion Matrix (IoU >= 0.5):")
+            print("Rows: True class, Columns: Predicted class")
+            print("Last row/column represents background/incorrect detections with score > 0.1")
+            print(self.conf_matrix)
 
     def __str__(self):
         self.summarize()

@@ -455,6 +455,7 @@ class Exp(BaseExp):
             lframe=self.lframe_val,
             gframe=self.gframe_val,
             first_only = False,
+            max_epoch=self.max_epoch,
         )
         return evaluator
 
@@ -464,5 +465,5 @@ class Exp(BaseExp):
         # NOTE: trainer shouldn't be an attribute of exp object
         return trainer
 
-    def eval(self, model, evaluator, is_distributed, half=False):
-        return evaluator.evaluate(model, is_distributed, half)
+    def eval(self, model, epoch, evaluator, is_distributed, half=False):
+        return evaluator.evaluate(model, epoch, is_distributed, half)

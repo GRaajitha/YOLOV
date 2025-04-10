@@ -7,7 +7,8 @@ import os
 import random
 import warnings
 from loguru import logger
-
+import wandb
+from datetime import date
 import torch
 import torch.backends.cudnn as cudnn
 from torch.nn.parallel import DistributedDataParallel as DDP
@@ -189,9 +190,11 @@ def main(exp, args, num_gpu):
         trt_file = None
         decoder = None
 
+    wandb.init(project="YOLOV-tools", name=f"eval_yolox_{args.experiment_name}_{date.today()}")
+
     # start evaluate
     *_, summary = evaluator.evaluate(
-        model, is_distributed, args.fp16, trt_file, decoder, exp.test_size
+        model, exp.max_epoch-1, is_distributed, args.fp16, trt_file, decoder, exp.test_size
     )
     logger.info("\n" + summary)
 

@@ -43,8 +43,9 @@ class Exp(MyExp):
         self.iou_base = False
         self.reconf = True
         self.loc_fuse_type = 'identity'
-        self.output_dir = "./V++_outputs"
-        # self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/yolov++_base_x_s_uniform_w_stride{self.seq_stride}_gframe{self.gframe}_8cls_2kinp_trimmed100_fixedlen_02_27_split_vid_20ep_{date.today()}"
+        # self.output_dir = "./V++_outputs"
+        self.wandb_name = f"yolov++_base_x_s_uniform_w_stride{self.seq_stride}_gframe{self.gframe}_8cls_2kinp_trimmed100_fixedlen_02_27_split_vid_20ep_{date.today()}"
+        self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/{self.wandb_name}"
         self.stem_lr_ratio = 0.1
         self.ota_mode = True
         #check pre_nms for testing when use_pre_nms is False in training: Result: AP50 drop 3.0

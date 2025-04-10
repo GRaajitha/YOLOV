@@ -40,7 +40,6 @@ class Trainer:
         self.exp = exp
         self.args = args
         self.args.logger = "wandb"
-        self.wandb_name = f"yoloxs_v7_8cls_1080x1920_20ep_{date.today()}"
 
         # training related attr
         self.max_epoch = exp.max_epoch
@@ -185,7 +184,7 @@ class Trainer:
                 for k, v in zip(self.args.opts[0::2], self.args.opts[1::2]):
                     if k.startswith("wandb-"):
                         wandb_params.update({k.lstrip("wandb-"): v})
-                self.wandb_logger = WandbLogger(name=self.wandb_name, config=vars(self.exp), **wandb_params)
+                self.wandb_logger = WandbLogger(name=self.exp.wandb_name, config=vars(self.exp), **wandb_params)
             else:
                 raise ValueError("logger must be either 'tensorboard' or 'wandb'")
 
@@ -324,7 +323,7 @@ class Trainer:
 
         with adjust_status(evalmodel, training=False):
             ap50_95, ap50, summary = self.exp.eval(
-                evalmodel, self.evaluator, self.is_distributed
+                evalmodel, self.epoch, self.evaluator, self.is_distributed
             )
 
         update_best_ckpt = ap50_95 > self.best_ap

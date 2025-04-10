@@ -319,6 +319,9 @@ class Exp(BaseExp):
             nmsthre=self.nmsthre,
             num_classes=self.num_classes,
             testdev=testdev,
+            max_epoch=self.max_epoch,
+            per_class_AP=True,
+            per_class_AR=True,
         )
         return evaluator
 
@@ -328,5 +331,5 @@ class Exp(BaseExp):
         # NOTE: trainer shouldn't be an attribute of exp object
         return trainer
 
-    def eval(self, model, evaluator, is_distributed, half=False):
-        return evaluator.evaluate(model, is_distributed, half)
+    def eval(self, model, epoch, evaluator, is_distributed, half=False):
+        return evaluator.evaluate(model, epoch, is_distributed, half)
