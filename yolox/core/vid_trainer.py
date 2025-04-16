@@ -157,16 +157,18 @@ class Trainer:
         inps, targets = self.exp.preprocess(inps, targets, self.input_size,
                                             )
         data_end_time = time.time()
-
+        # print("here1")
         with torch.cuda.amp.autocast(enabled=self.amp_training):
             outputs = self.model(inps, targets, lframe = self.exp.lframe,gframe = self.exp.gframe)
 
+        # print("here2")
         loss = outputs["total_loss"]
 
         self.optimizer.zero_grad()
         self.scaler.scale(loss).backward()
         self.scaler.step(self.optimizer)
         self.scaler.update()
+        # print("here3")
 
         if self.use_model_ema:
             self.ema_model.update(self.model)
@@ -175,6 +177,8 @@ class Trainer:
         self.lr = lr
         for param_group in self.optimizer.param_groups:
             param_group["lr"] = lr
+        
+        # print("here4")
 
         iter_end_time = time.time()
         self.meter.update(
