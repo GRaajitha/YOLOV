@@ -15,7 +15,7 @@ from tqdm import tqdm
 import numpy as np
 import cv2
 import os
-
+import wandb
 import torch
 
 from yolox.data.datasets import COCO_CLASSES
@@ -29,6 +29,70 @@ from yolox.utils import (
     xyxy2xywh
 )
 
+def log_pr_curve(cocoEval, iou_threshold):
+    """Logs the Precision-Recall curve averaged over categories to wandb.
+
+    Args:
+        cocoEval (COCOeval): The evaluated COCOeval object.
+        iou_threshold (float): The IoU threshold to use for the curve.
+    """
+    if not wandb.run:
+        logger.warning("WandB run not initialized. Skipping PR curve logging.")
+        return
+    
+    # Find the index for the given IoU threshold. Will raise IndexError if not found.
+    iou_idx = np.where(np.isclose(cocoEval.params.iouThrs, iou_threshold))[0][0]
+    # Default indices for area range ('all') and max detections (100)
+    area_idx = 0
+    max_dets_idx = cocoEval.params.maxDets.index(100)
+
+    # Extract precision values across all recall thresholds (R) and categories (K) Shape: [R, K]
+    precisions_all_categories = cocoEval.eval['precision'][iou_idx, :, :, area_idx, max_dets_idx]
+    # Average precision across categories (axis=1), treating -1 as NaN
+    mean_precision = np.nanmean(np.where(precisions_all_categories == -1, np.nan, precisions_all_categories), axis=1)
+    # Get recall thresholds
+    recall = cocoEval.params.recThrs
+
+    # Filter out NaN values from averaging and corresponding recall values
+    valid_mask = ~np.isnan(mean_precision)
+    final_precision = mean_precision[valid_mask]
+    final_recall = recall[valid_mask]
+
+    # Check if there's data to plot
+    if final_recall.size == 0 or final_precision.size == 0:
+        logger.warning(f"No valid data points found to log the PR curve for IoU={iou_threshold}.")
+    else:
+        # Create wandb.Table
+        data = [[r, p] for r, p in zip(final_recall, final_precision)]
+        table = wandb.Table(data=data, columns=["recall", "precision"])
+
+        # Log custom line plot to wandb
+        log_key = f"pr_curve_iou_{str(iou_threshold).replace('.', '_')}"
+        title = f"Precision-Recall Curve (IoU={iou_threshold}, Averaged Over Categories)"
+        wandb.log({log_key: wandb.plot.line(table, "recall", "precision", title=title)})
+        logger.info(f"Logged PR curve for IoU={iou_threshold} to WandB under key '{log_key}'.")
+
+def log_confusion_matrix(cocoEval, cat_names):
+    """creates and logs confidence matrix and normalized confidence matrix tables in wandb"""
+    if not wandb.run:
+            logger.warning("WandB run not initialized. Skipping PR curve logging.")
+            return
+    
+    conf_mat_data = []
+    cat_names = cat_names + ['background']
+    for i in range(len(cocoEval.conf_matrix)):
+        conf_mat_data.append(
+            [cat_names[i]] + list(cocoEval.conf_matrix[i])
+        )
+
+    wandb.log(
+        {
+            f"confusion_matrix@0_5_IOU": wandb.Table(
+                columns=["GT/pred"] + list(cat_names),
+                data=conf_mat_data,
+            )
+        }
+    )
 
 def per_class_AR_table(coco_eval, class_names=COCO_CLASSES, headers=["class", "AR"], colums=6):
     per_class_AR = {}
@@ -50,7 +114,7 @@ def per_class_AR_table(coco_eval, class_names=COCO_CLASSES, headers=["class", "A
     table = tabulate(
         row_pair, tablefmt="pipe", floatfmt=".3f", headers=table_headers, numalign="left",
     )
-    return table
+    return table, per_class_AR
 
 
 def per_class_AP_table(coco_eval, class_names=COCO_CLASSES, headers=["class", "AP"], colums=6):
@@ -75,7 +139,7 @@ def per_class_AP_table(coco_eval, class_names=COCO_CLASSES, headers=["class", "A
     table = tabulate(
         row_pair, tablefmt="pipe", floatfmt=".3f", headers=table_headers, numalign="left",
     )
-    return table
+    return table, per_class_AP
 
 
 class COCOEvaluator:
@@ -91,6 +155,7 @@ class COCOEvaluator:
         confthre: float,
         nmsthre: float,
         num_classes: int,
+        max_epoch: int,
         testdev: bool = False,
         per_class_AP: bool = False,
         per_class_AR: bool = False,
@@ -116,10 +181,12 @@ class COCOEvaluator:
         self.per_class_AP = per_class_AP
         self.per_class_AR = per_class_AR
         self.fg_AR_only = fg_AR_only
+        self.max_epoch_id = max_epoch-1
 
     def evaluate(
         self,
         model,
+        epoch=0,
         distributed=False,
         half=False,
         trt_file=None,
@@ -228,7 +295,8 @@ class COCOEvaluator:
         #calculate average predictions per image
         if is_main_process():
             logger.info("average predictions per image: {:.2f}".format(len(data_list)/len(self.dataloader.dataset)))
-        eval_results = self.evaluate_prediction(data_list, statistics)
+
+        eval_results = self.evaluate_prediction(data_list, statistics, epoch)
         synchronize()
         return eval_results
 
@@ -266,7 +334,7 @@ class COCOEvaluator:
                 data_list.append(pred_data)
         return data_list
 
-    def evaluate_prediction(self, data_dict, statistics):
+    def evaluate_prediction(self, data_dict, statistics, epoch):
         if not is_main_process():
             return 0, 0, None
 
@@ -318,17 +386,24 @@ class COCOEvaluator:
             cocoEval.params.useCats = 1  # Enable category-based evaluation
             cocoEval.evaluate()
             cocoEval.accumulate()
+
             redirect_string = io.StringIO()
             with contextlib.redirect_stdout(redirect_string):
-                cocoEval.summarize()
+                cocoEval.summarize(epoch == self.max_epoch_id)
+
             info += redirect_string.getvalue()
             cat_ids = list(cocoGt.cats.keys())
             cat_names = [cocoGt.cats[catId]['name'] for catId in sorted(cat_ids)]
+            if epoch == self.max_epoch_id:
+                log_pr_curve(cocoEval, iou_threshold=0.5)
+                log_confusion_matrix(cocoEval, cat_names)
             if self.per_class_AP:
-                AP_table = per_class_AP_table(cocoEval, class_names=cat_names)
+                AP_table, per_class_AP = per_class_AP_table(cocoEval, class_names=cat_names)
+                wandb.log({f"val/mAP_{name}":value/100 for name, value in per_class_AP.items()})
                 info += "per class AP:\n" + AP_table + "\n"
             if self.per_class_AR:
-                AR_table = per_class_AR_table(cocoEval, class_names=cat_names)
+                AR_table, per_class_AR = per_class_AR_table(cocoEval, class_names=cat_names)
+                wandb.log({f"val/mAR_{name}":value/100 for name, value in per_class_AR.items()})
                 info += "per class AR:\n" + AR_table + "\n"
             return cocoEval.stats[0], cocoEval.stats[1], info
         else:

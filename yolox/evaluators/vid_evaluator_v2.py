@@ -11,13 +11,14 @@ import tempfile
 import time
 from loguru import logger
 from tqdm import tqdm
-from yolox.evaluators.coco_evaluator import per_class_AR_table, per_class_AP_table
+from yolox.evaluators.coco_evaluator import per_class_AR_table, per_class_AP_table, log_pr_curve, log_confusion_matrix
 import torch
 import pycocotools.coco
 import os
 import numpy as np
 import cv2
 import wandb
+import matplotlib.pyplot as plt
 
 from yolox.utils import (
     gather,
@@ -50,8 +51,8 @@ class VIDEvaluator:
 
     def __init__(
             self, dataloader, img_size, confthre, nmsthre,
-            num_classes, testdev=False, gl_mode=False,
-            lframe=0, gframe=32,**kwargs
+            num_classes, max_epoch, testdev=False, gl_mode=False,
+            lframe=0, gframe=32, **kwargs
     ):
         """
         Args:
@@ -74,6 +75,7 @@ class VIDEvaluator:
         self.gl_mode = gl_mode
         self.lframe = lframe
         self.gframe = gframe
+        self.max_epoch_id = max_epoch - 1
         self.kwargs = kwargs
         self.vid_to_coco = {
             'info': {
@@ -117,6 +119,7 @@ class VIDEvaluator:
     def evaluate(
             self,
             model,
+            epoch=0,
             distributed=False,
             half=True,
             trt_file=None,
@@ -221,7 +224,7 @@ class VIDEvaluator:
             torch.distributed.reduce(statistics, dst=0)
 
         del labels_list
-        eval_results = self.evaluate_prediction(data_list, statistics)
+        eval_results = self.evaluate_prediction(data_list, statistics, epoch)
         del data_list
         self.vid_to_coco['annotations'] = []
 
@@ -349,7 +352,7 @@ class VIDEvaluator:
             frame_now = frame_now + 1
         return data_list, label_list
 
-    def evaluate_prediction(self, data_dict, statistics, ori=False):
+    def evaluate_prediction(self, data_dict, statistics, epoch, ori=False):
         if not is_main_process():
             return 0, 0, None
         
@@ -404,18 +407,28 @@ class VIDEvaluator:
             cocoEval.params.iouThrs = np.array([0.2, 0.5, 0.75])
             cocoEval.evaluate()
             cocoEval.accumulate()
+            
             redirect_string = io.StringIO()
 
             cat_ids = list(cocoGt.cats.keys())
             cat_names = [cocoGt.cats[catId]['name'] for catId in sorted(cat_ids)]
-            AP_table = per_class_AP_table(cocoEval, class_names=cat_names)
+            AP_table, per_class_AP = per_class_AP_table(cocoEval, class_names=cat_names)
+            wandb.log({f"val/mAP_{name}":value/100 for name, value in per_class_AP.items()})
             info += "per class AP:\n" + AP_table + "\n"
 
-            AR_table = per_class_AR_table(cocoEval, class_names=cat_names)
+            AR_table, per_class_AR = per_class_AR_table(cocoEval, class_names=cat_names)
+            wandb.log({f"val/mAR_{name}":value/100 for name, value in per_class_AR.items()})
             info += "per class AR:\n" + AR_table + "\n"
             with contextlib.redirect_stdout(redirect_string):
-                cocoEval.summarize()
+                cocoEval.summarize(compute_confidence_matrix=epoch==self.max_epoch_id)
             info += redirect_string.getvalue()
+
+            if epoch == self.max_epoch_id:
+                # Log PR curve to WandB
+                log_pr_curve(cocoEval, iou_threshold=0.5)
+                # Log confusion matrix
+                log_confusion_matrix(cocoEval, cat_names)
+            
             return cocoEval.stats[0], cocoEval.stats[1], info
         else:
             return 0, 0, info

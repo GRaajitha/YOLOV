@@ -100,7 +100,6 @@ class Trainer:
         self.data_type = torch.float16 if args.fp16 else torch.float32
         self.input_size = exp.input_size
         self.best_ap = 0
-        self.wandb_exp_name = ""#f"yolov++_swin_8gpu_2kinp_ovis_v7_{date.today()}"
 
         # metric record
         self.meter = MeterBuffer(window_size=exp.print_interval)
@@ -122,7 +121,8 @@ class Trainer:
                 for k, v in zip(self.args.opts[0::2], self.args.opts[1::2]):
                     if k.startswith("wandb-"):
                         wandb_params.update({k.lstrip("wandb-"): v})
-                self.wandb_logger = WandbLogger(name=self.wandb_exp_name,config=vars(self.exp), **wandb_params)
+                self.wandb_logger = WandbLogger(name=self.exp.wandb_name,config=vars(self.exp), **wandb_params)
+            self.epoch = self.exp.max_epoch - 1
             self.evaluate()
             return
 
@@ -197,7 +197,7 @@ class Trainer:
                 for k, v in zip(self.args.opts[0::2], self.args.opts[1::2]):
                     if k.startswith("wandb-"):
                         wandb_params.update({k.lstrip("wandb-"): v})
-                self.wandb_logger = WandbLogger(name=self.wandb_exp_name,config=vars(self.exp), **wandb_params)
+                self.wandb_logger = WandbLogger(name=self.exp.wandb_name,config=vars(self.exp), **wandb_params)
             else:
                 raise ValueError("logger must be either 'tensorboard' or 'wandb'")
 
@@ -400,7 +400,7 @@ class Trainer:
             val_loader=self.val_loader
         )
         summary = self.exp.eval(
-            evalmodel, self.evaluator, self.is_distributed,self.args.fp16
+            evalmodel, self.epoch, self.evaluator, self.is_distributed,self.args.fp16
         )
         self.model.train()
 
@@ -443,7 +443,7 @@ class Trainer:
             val_loader=self.val_loader
         )
         summary = self.exp.eval(
-            evalmodel, self.evaluator, self.is_distributed, self.amp_training
+            evalmodel, self.epoch, self.evaluator, self.is_distributed, self.amp_training
         )
         self.model.train()
         if self.rank == 0:
