@@ -116,7 +116,7 @@ class Trainer:
         )
 
         if val:
-            if self.args.logger == "wandb":
+            if self.args.logger == "wandb" and self.rank == 0:
                 wandb_params = dict()
                 for k, v in zip(self.args.opts[0::2], self.args.opts[1::2]):
                     if k.startswith("wandb-"):
@@ -157,18 +157,16 @@ class Trainer:
         inps, targets = self.exp.preprocess(inps, targets, self.input_size,
                                             )
         data_end_time = time.time()
-        # print("here1")
+
         with torch.cuda.amp.autocast(enabled=self.amp_training):
             outputs = self.model(inps, targets, lframe = self.exp.lframe,gframe = self.exp.gframe)
 
-        # print("here2")
         loss = outputs["total_loss"]
 
         self.optimizer.zero_grad()
         self.scaler.scale(loss).backward()
         self.scaler.step(self.optimizer)
         self.scaler.update()
-        # print("here3")
 
         if self.use_model_ema:
             self.ema_model.update(self.model)
@@ -177,8 +175,6 @@ class Trainer:
         self.lr = lr
         for param_group in self.optimizer.param_groups:
             param_group["lr"] = lr
-        
-        # print("here4")
 
         iter_end_time = time.time()
         self.meter.update(
@@ -416,7 +412,7 @@ class Trainer:
             if self.args.logger == "tensorboard":
                 self.tblogger.add_scalar("val/COCOAP50", ap50, self.epoch + 1)
                 self.tblogger.add_scalar("val/COCOAP50_95", ap50_95, self.epoch + 1)
-            if self.args.logger == "wandb":
+            if self.args.logger == "wandb" and self.rank==0:
                 self.wandb_logger.log_metrics({
                     "val/COCOAP50": ap50,
                     "val/COCOAP50_95": ap50_95,
