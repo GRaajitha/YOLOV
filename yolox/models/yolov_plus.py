@@ -7,6 +7,7 @@ import os
 import cv2
 import numpy as np
 import wandb
+from yolox.utils import get_rank
 
 class YOLOV(nn.Module):
     """
@@ -24,37 +25,40 @@ class YOLOV(nn.Module):
         self.backbone_only = backbone_only
         self.head_only = head_only
         assert not(self.backbone_only == True and self.head_only==True), "both backbone_only and head_only options are mutually exclusive"
-        
+    
+    def visualize_inputs(self, x, targets):
+        output_dir = f"{self.output_dir}/inputViz/"
+        os.makedirs(output_dir, exist_ok=True)
+        for i in range(x.shape[0]):
+            img = x[i]
+            img = img.cpu().detach().numpy()
+            img = img.astype('uint8')  # Convert to uint8
+
+            # Convert from (C, H, W) to (H, W, C)
+            img = img.transpose(1, 2, 0)
+            img = np.ascontiguousarray(img)
+            # Draw bounding boxes
+            for j in range(targets.shape[1]):
+                cls, c_x, c_y, w, h = targets[i, j]
+                c_x, c_y, w, h = map(int, [c_x, c_y, w/2, h/2])
+                xmin = c_x - w
+                ymin = c_y - h
+                xmax = c_x + w
+                ymax = c_y + h
+                img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0,0,255), 3)
+
+            # Save the image
+            # cv2.imwrite(os.path.join(output_dir, f"image_{i}.png"), img)
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            wandb.log({f"inputs/{i}": wandb.Image(img)})
+        # print(f"Saved {x.shape[0]} images in '{output_dir}' directory.")
+        self.count += 1
+
     def forward(self, x=None, targets=None,nms_thresh=0.5,lframe=0,gframe=32, fpn_out0=None, fpn_out1=None, fpn_out2=None):
         # fpn output content features of [dark3, dark4, dark5]
         if self.training:
-            if targets is not None and self.count==0:
-                output_dir = f"{self.output_dir}/inputViz/"
-                os.makedirs(output_dir, exist_ok=True)
-                for i in range(x.shape[0]):
-                    img = x[i]
-                    img = img.cpu().detach().numpy()
-                    img = img.astype('uint8')  # Convert to uint8
-
-                    # Convert from (C, H, W) to (H, W, C)
-                    img = img.transpose(1, 2, 0)
-                    img = np.ascontiguousarray(img)
-                    # Draw bounding boxes
-                    for j in range(targets.shape[1]):
-                        cls, c_x, c_y, w, h = targets[i, j]
-                        c_x, c_y, w, h = map(int, [c_x, c_y, w/2, h/2])
-                        xmin = c_x - w
-                        ymin = c_y - h
-                        xmax = c_x + w
-                        ymax = c_y + h
-                        img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0,0,255), 3)
-
-                    # Save the image
-                    # cv2.imwrite(os.path.join(output_dir, f"image_{i}.png"), img)
-                    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                    wandb.log({f"inputs/{i}": wandb.Image(img)})
-                # print(f"Saved {x.shape[0]} images in '{output_dir}' directory.")
-                self.count += 1
+            if targets is not None and self.count==0 and get_rank()==0:
+                self.visualize_inputs(x, targets)
 
             fpn_outs = self.backbone(x)
 

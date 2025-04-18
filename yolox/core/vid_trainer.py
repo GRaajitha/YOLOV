@@ -116,7 +116,7 @@ class Trainer:
         )
 
         if val:
-            if self.args.logger == "wandb":
+            if self.args.logger == "wandb" and self.rank == 0:
                 wandb_params = dict()
                 for k, v in zip(self.args.opts[0::2], self.args.opts[1::2]):
                     if k.startswith("wandb-"):
@@ -412,7 +412,7 @@ class Trainer:
             if self.args.logger == "tensorboard":
                 self.tblogger.add_scalar("val/COCOAP50", ap50, self.epoch + 1)
                 self.tblogger.add_scalar("val/COCOAP50_95", ap50_95, self.epoch + 1)
-            if self.args.logger == "wandb":
+            if self.args.logger == "wandb" and self.rank==0:
                 self.wandb_logger.log_metrics({
                     "val/COCOAP50": ap50,
                     "val/COCOAP50_95": ap50_95,

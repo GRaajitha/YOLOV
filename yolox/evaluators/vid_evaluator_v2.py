@@ -26,7 +26,8 @@ from yolox.utils import (
     postprocess,
     synchronize,
     time_synchronized,
-    xyxy2xywh
+    xyxy2xywh,
+    get_rank
 )
 
 vid_classes = (
@@ -116,6 +117,35 @@ class VIDEvaluator:
         self.gt_refined = './gt_refined.json'
         self.img_id_to_name = {v:k for k,v in self.dataloader.dataset.name_id_dic.items()}
 
+    def visualize_inferences(self, imgs, label, outputs):
+        for i in range(imgs.shape[0]):
+            img = imgs[i]
+            img = img.cpu().detach().numpy()
+            img = img.astype('uint8')  # Convert to uint8
+
+            # Convert from (C, H, W) to (H, W, C)
+            img = img.transpose(1, 2, 0)
+            img = np.ascontiguousarray(img)
+            # Draw bounding boxes
+            for j in range(label[i].shape[0]):
+                cls, xmin, ymin, xmax, ymax = label[i][j]
+                xmin, ymin, xmax, ymax = map(int, [xmin, ymin, xmax, ymax])
+                img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0,255,0), 3)
+                img = cv2.putText(img, str(cls.item()), (xmin-5, ymin-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
+
+            for j in range(outputs[i].shape[0]):
+                xmin, ymin, xmax, ymax, obj_score, cls_score, cls = outputs[i][j]
+                xmin, ymin, xmax, ymax = map(int, [xmin, ymin, xmax, ymax])
+                score = obj_score * cls_score
+                score = round(score.item(), 3)
+                if score > 0.001:
+                    img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0,0,255), 3)
+                    # img = cv2.putText(img, str(f"{cls.item()}_{score}"), (xmin+5, ymin+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2)
+
+            # log the image
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            wandb.log({f"inferences/{i}": wandb.Image(img)})
+    
     def evaluate(
             self,
             model,
@@ -183,34 +213,8 @@ class VIDEvaluator:
                 label = [label[0]]
             
             #vizualize
-            if cur_iter == 0:
-                for i in range(imgs.shape[0]):
-                    img = imgs[i]
-                    img = img.cpu().detach().numpy()
-                    img = img.astype('uint8')  # Convert to uint8
-
-                    # Convert from (C, H, W) to (H, W, C)
-                    img = img.transpose(1, 2, 0)
-                    img = np.ascontiguousarray(img)
-                    # Draw bounding boxes
-                    for j in range(label[i].shape[0]):
-                        cls, xmin, ymin, xmax, ymax = label[i][j]
-                        xmin, ymin, xmax, ymax = map(int, [xmin, ymin, xmax, ymax])
-                        img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0,255,0), 3)
-                        img = cv2.putText(img, str(cls.item()), (xmin-5, ymin-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
-
-                    for j in range(outputs[i].shape[0]):
-                        xmin, ymin, xmax, ymax, obj_score, cls_score, cls = outputs[i][j]
-                        xmin, ymin, xmax, ymax = map(int, [xmin, ymin, xmax, ymax])
-                        score = obj_score * cls_score
-                        score = round(score.item(), 3)
-                        if score > 0.001:
-                            img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0,0,255), 3)
-                            # img = cv2.putText(img, str(f"{cls.item()}_{score}"), (xmin+5, ymin+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2)
-
-                    # log the image
-                    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                    wandb.log({f"inferences/{i}": wandb.Image(img)})
+            if cur_iter == 0 and get_rank() == 0:
+                self.visualize_inferences(imgs, label, outputs)
 
             temp_data_list, temp_label_list = self.convert_to_coco_format(outputs, info_imgs, copy.deepcopy(label), path)
             data_list.extend(temp_data_list) #preds
@@ -218,17 +222,16 @@ class VIDEvaluator:
 
         self.vid_to_coco['annotations'].extend(labels_list)
         statistics = torch.cuda.FloatTensor([inference_time, nms_time, n_samples])
-        if distributed:
-            data_list = gather(data_list, dst=0)
-            data_list = list(itertools.chain(*data_list))
-            torch.distributed.reduce(statistics, dst=0)
+        # if distributed:
+        #     data_list = gather(data_list, dst=0)
+        #     data_list = list(itertools.chain(*data_list))
+        #     torch.distributed.reduce(statistics, dst=0)
 
-        del labels_list
         eval_results = self.evaluate_prediction(data_list, statistics, epoch)
+        synchronize()
+        del labels_list
         del data_list
         self.vid_to_coco['annotations'] = []
-
-        synchronize()
         return eval_results
 
     def convert_to_coco_format(self, outputs, info_imgs, labels, paths):
@@ -413,12 +416,14 @@ class VIDEvaluator:
             cat_ids = list(cocoGt.cats.keys())
             cat_names = [cocoGt.cats[catId]['name'] for catId in sorted(cat_ids)]
             AP_table, per_class_AP = per_class_AP_table(cocoEval, class_names=cat_names)
-            wandb.log({f"val/mAP_{name}":value/100 for name, value in per_class_AP.items()})
             info += "per class AP:\n" + AP_table + "\n"
 
             AR_table, per_class_AR = per_class_AR_table(cocoEval, class_names=cat_names)
-            wandb.log({f"val/mAR_{name}":value/100 for name, value in per_class_AR.items()})
             info += "per class AR:\n" + AR_table + "\n"
+
+            if get_rank() == 0:
+                wandb.log({f"val/mAP_{name}":value/100 for name, value in per_class_AP.items()})
+                wandb.log({f"val/mAR_{name}":value/100 for name, value in per_class_AR.items()})
             with contextlib.redirect_stdout(redirect_string):
                 cocoEval.summarize(compute_confidence_matrix=epoch==self.max_epoch_id)
             info += redirect_string.getvalue()
