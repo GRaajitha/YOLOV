@@ -60,7 +60,6 @@ def make_parser():
     )
     parser.add_argument("--conf", default=0.05, type=float, help="test conf")
     parser.add_argument("--nms", default=0.5, type=float, help="test nms threshold")
-    parser.add_argument("--tsize", default=576, type=int, help="test img size")
     parser.add_argument(
         "--fp16",
         dest="fp16",
@@ -130,7 +129,7 @@ def image_demo(predictor, vis_folder, path, current_time, save_result):
         if ch == 27 or ch == ord("q") or ch == ord("Q"):
             break
 
-def imageflow_demo(predictor, vis_folder, current_time, args,exp):
+def imageflow_demo(predictor, vis_folder, current_time, args, exp):
     gframe = exp.gframe_val
     lframe = exp.lframe_val
     traj_linking = exp.traj_linking
@@ -148,81 +147,94 @@ def imageflow_demo(predictor, vis_folder, current_time, args,exp):
     ratio = min(predictor.test_size[0] / height, predictor.test_size[1] / width)
     ratio_y, ratio_x = predictor.test_size[0] / height, predictor.test_size[1] / width
     vid_save_path = os.path.join(save_folder, args.path.split("/")[-1])
-    # img_save_path = save_folder
     logger.info(f"video save_path is {vid_save_path}")
     vid_writer = cv2.VideoWriter(
         vid_save_path, cv2.VideoWriter_fourcc(*"mp4v"), fps, (int(width), int(height))
     )
-    frames = []
-    outputs = []
-    ori_frames = []
+
+    # Process frames in sliding window
+    window_size = gframe if gframe != 0 else lframe
+    if window_size == 0:
+        window_size = 32  # Default window size if both gframe and lframe are 0
+
+    # Initialize sliding window
+    frames_window = []
+    frame_idx = 0
+    processed_frames = 0
+
     while True:
         ret_val, frame = cap.read()
-        if ret_val:
-            ori_frames.append(frame)
-            frame, _ = predictor.preproc(frame, None, exp.test_size)
-            frames.append(torch.tensor(frame))
-        else:
+        if not ret_val:
             break
-    res = []
-    frame_len = len(frames)
-    index_list = list(range(frame_len))
-    if gframe != 0:
-        random.seed(41)
-        random.shuffle(index_list)
-        random.seed(41)
-        random.shuffle(frames)
-        split_num = int(frame_len / (gframe))#
-        for i in range(split_num):
-            res.append(frames[i * gframe:(i + 1) * gframe])
-        res.append(frames[(i + 1) * gframe:])
-    else:
-        split_num = int(frame_len / (lframe))
-        for i in range(split_num):
-            if traj_linking and i != 0:
-                res.append(frames[i * lframe-1:(i + 1) * lframe])
+
+        # Preprocess frame
+        processed_frame, _ = predictor.preproc(frame, None, exp.test_size)
+        frames_window.append((frame, torch.tensor(processed_frame)))
+
+        # When window is full, process the batch
+        if len(frames_window) == window_size:
+            # Extract frames and tensors
+            original_frames = [f[0] for f in frames_window]
+            frame_tensors = [f[1] for f in frames_window]
+
+            # Process the batch
+            if traj_linking:
+                batch_outputs, adj_lists, fc_outputs, names = predictor.inference(
+                    torch.stack(frame_tensors), lframe=window_size, gframe=0
+                )
             else:
-                res.append(frames[i * lframe:(i + 1) * lframe])
+                batch_outputs = predictor.inference(
+                    torch.stack(frame_tensors), lframe=lframe, gframe=gframe
+                )
+
+            # Visualize and save the last frame of the window
+            if args.post:
+                ratio = 1
+            result_frame = predictor.visual(
+                batch_outputs[-1], original_frames[-1], ratio_y, ratio_x, cls_conf=args.conf
+            )
+            if args.save_result:
+                vid_writer.write(result_frame)
+            processed_frames += 1
+
+            # Slide the window by removing the first frame
+            frames_window.pop(0)
+
+            # Clear memory
+            del frame_tensors
+            del batch_outputs
+            gc.collect()
+            torch.cuda.empty_cache()
+
+        frame_idx += 1
+
+    # Process remaining frames in the window
+    if len(frames_window) > 1:
+        original_frames = [f[0] for f in frames_window]
+        frame_tensors = [f[1] for f in frames_window]
+
         if traj_linking:
-            tail = frames[split_num * lframe - 1:]
+            batch_outputs, adj_lists, fc_outputs, names = predictor.inference(
+                torch.stack(frame_tensors), lframe=len(frame_tensors), gframe=0
+            )
         else:
-            tail = frames[split_num * lframe:]
-        res.append(tail)
+            batch_outputs = predictor.inference(
+                torch.stack(frame_tensors), lframe=lframe, gframe=gframe
+            )
 
-    outputs, adj_lists, fc_outputs, names = [], [], [], []
-    for ele_id,ele in enumerate(res):
-        if ele == []: continue
-        frame_num = len(ele)
-        ele = torch.stack(ele)
-        t0 = time.time()
-        if traj_linking:
-            pred_result, adj_list, fc_output = predictor.inference(ele, lframe=frame_num, gframe=0)
-            if len(outputs) != 0:  # skip the connection frame
-                pred_result = pred_result[1:]
-                fc_output = fc_output[1:]
-            outputs.extend(pred_result)
-            adj_lists.extend(adj_list)
-            fc_outputs.append(fc_output)
-        else:
-            outputs.extend(predictor.inference(ele,lframe=lframe,gframe=gframe))
-    if traj_linking:
-        outputs = post_linking(fc_outputs, adj_lists, outputs, P, Cls, names, exp)
-
-    outputs = [j for _,j in sorted(zip(index_list,outputs))]
-    if args.post:
-        logger.info("Post processing...")
-        out_post_format = predictor.convert_to_post(outputs, ratio, [height, width])
-        out_post = predictor.post(out_post_format)
-        outputs = predictor.convert_to_ori(out_post, frame_len)
-
-    # logger.info("Saving detection result in {}".format(img_save_path))
-    for img_idx,(output,img) in enumerate(zip(outputs,ori_frames[:len(outputs)])):
+        # Visualize and save the last frame
         if args.post:
             ratio = 1
-        result_frame = predictor.visual(output,img,ratio_y, ratio_x,cls_conf=args.conf)
+        result_frame = predictor.visual(
+            batch_outputs[-1], original_frames[-1], ratio_y, ratio_x, cls_conf=args.conf
+        )
         if args.save_result:
             vid_writer.write(result_frame)
-            # cv2.imwrite(os.path.join(img_save_path, str(img_idx) + '.jpg'), result_frame)
+        processed_frames += 1
+
+    # Clean up
+    cap.release()
+    vid_writer.release()
 
 def main(exp, args):
     if not args.experiment_name:
