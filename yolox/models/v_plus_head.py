@@ -588,19 +588,11 @@ class YOLOVHead(nn.Module):
             #cls_preds, obj_preds = cls_preds.sigmoid(), obj_preds.sigmoid()
             #refined_preds = torch.cat([reg_preds, obj_preds, cls_preds], 1) #[num_preds, 5+num_classes]
 
-            #split refined_preds into frames according to preds_per_frame which is the number of preds in each frame
             if kwargs.get('onnx_export',False):
-                cls_per_frame, obj_per_frame, reg_per_frame = [], [], []
-                for i in range(len(pred_result)):
-                    obj_per_frame.append(obj_preds[:self.Prenum].squeeze(-1))
-                    obj_preds = obj_preds[self.Prenum:]
-                    cls_per_frame.append(cls_preds[:self.Prenum])
-                    cls_preds = cls_preds[self.Prenum:]
-                
-                result = postprocess_onnx(pred_result,
+                result = postprocess_onnx([pred_result[-1]],
                                         self.num_classes,
-                                        cls_per_frame,
-                                        conf_output = obj_per_frame,
+                                        [cls_preds[-self.Prenum:]],
+                                        conf_output = [obj_preds[-self.Prenum:].squeeze(-1)],
                                         nms_thre = nms_thresh,
                                         max_predictions_per_image=self.Prenum,
                                         )
