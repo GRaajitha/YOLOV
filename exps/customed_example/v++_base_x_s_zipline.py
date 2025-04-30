@@ -7,7 +7,7 @@ from exps.yolov.yolov_base import Exp as MyExp
 from loguru import logger
 from yolox.data.datasets import vid
 from yolox.data.data_augment import Vid_Val_Transform
-from datetime import date
+from datetime import datetime
 
 #exp after OTA_VID_woRegScore, exp 8 in the doc, decouple the reg and cls refinement
 class Exp(MyExp):
@@ -44,7 +44,8 @@ class Exp(MyExp):
         self.reconf = True
         self.loc_fuse_type = 'identity'
         # self.output_dir = "./V++_outputs"
-        self.wandb_name = f"yolov++_base_x_s_uniform_w_stride{self.seq_stride}_gframe{self.gframe}_8cls_2kinp_trimmed100_fixedlen_02_27_split_vid_20ep_{date.today()}"
+        cur_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+        self.wandb_name = f"yolov++_swin_tiny_uniform_w_stride{self.seq_stride}_gframe{self.gframe}_8cls_2kinp_trimmed1000_fixedlen_02_26_split_vid_20ep_{cur_time}"
         self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/{self.wandb_name}"
         self.stem_lr_ratio = 0.1
         self.ota_mode = True

@@ -142,12 +142,14 @@ class YOLOPAFPN_Swin(nn.Module):
         pretrain_img_size=224,
         ape = False,
         window_size = 7,
+        input_size=(1080,1920),
     ):
         super().__init__()
         self.backbone = SwinTransformer(out_indices=in_features,depths=swin_depth,num_heads=num_heads,
                                         embed_dim=base_dim,pretrain_img_size=pretrain_img_size,ape=ape,window_size=window_size)
         self.in_features = in_features
         self.in_channels = in_channels
+        self.input_size = input_size
         Conv = DWConv if depthwise else BaseConv
 
         self.upsample = nn.Upsample(scale_factor=2, mode="nearest")
@@ -227,6 +229,8 @@ class YOLOPAFPN_Swin(nn.Module):
 
         fpn_out1 = self.reduce_conv1(f_out0)  # 512->256/16
         f_out1 = self.upsample(fpn_out1)  # 256/8
+        if input.shape[2] == self.input_size[0] and input.shape[3] == self.input_size[1] and self.input_size[0] != self.input_size[1]:
+            x2 = F.pad(x2, (0, 0, 0, 1))
         f_out1 = torch.cat([f_out1, x2], 1)  # 256->512/8
         pan_out2 = self.C3_p3(f_out1)  # 768->256/8
 

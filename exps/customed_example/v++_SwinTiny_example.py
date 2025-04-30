@@ -7,7 +7,7 @@ from exps.yolov.yolov_base import Exp as MyExp
 from loguru import logger
 from yolox.data.datasets import vid
 from yolox.data.data_augment import Vid_Val_Transform
-from datetime import date
+from datetime import datetime
 class Exp(MyExp):
     def __init__(self):
         super(Exp, self).__init__()
@@ -18,40 +18,49 @@ class Exp(MyExp):
         # Define yourself dataset path
         self.num_classes = 8  
         self.data_dir = "/shared/vision/dataset/"
-        self.train_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_train_split_video_sequences_2.json"
-        self.val_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_val_split_video_sequences_2.json"
-        self.test_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_test_split_video_sequences_2.json"
-        self.input_size = (1920, 1920)
-        self.test_size = (1920, 1920)
-        # self.vid_train_path = '/shared/vision/dataset/metadata/ovis_v7/train_seq.npy'
-        # self.vid_val_path = '/shared/vision/dataset/metadata/ovis_v7/val_seq.npy'
+        self.train_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_train_split_video_sequences.json"
+        self.val_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_val_split_video_sequences.json"
+        self.test_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_test_split_video_sequences.json"
+        self.input_size = (1080, 1920)
+        self.test_size = (1080, 1920)
 
-        self.max_epoch = 10
+        self.max_epoch = 20
         self.basic_lr_per_img = 0.0005 / 16
         self.warmup_epochs = 4
+        self.no_aug_epochs = 2
         self.pre_no_aug = 2
         self.lframe = 0
-        self.lframe_val = 0
+        self.lframe_val = self.lframe
         self.gframe = 8
-        self.gframe_val = 8 #config your gframe_val and gframe here
+        self.gframe_val = self.gframe
+
+        self.seq_stride = 8
         self.use_loc_emd = False
         self.iou_base = False
         self.reconf = True
         self.loc_fuse_type = 'identity'
-        # self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/yolov++_swin_8cls_1gpu_2kinp_trimmed100_fixedlen_02_27_split_vid_20ep_{date.today()}"
-        self.output_dir = "./V++_Outputs"
+        # self.output_dir = "./V++_outputs"
+        cur_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+        self.wandb_name = f"yolov++_swin_tiny_uniform_w_stride{self.seq_stride}_gframe{self.gframe}_8cls_2kinp_trimmed1000_fixedlen_02_26_split_vid_20ep_{cur_time}"
+        self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/{self.wandb_name}"
         self.stem_lr_ratio = 0.1
         self.ota_mode = True
+        #check pre_nms for testing when use_pre_nms is False in training: Result: AP50 drop 3.0
         self.use_pre_nms = False
         self.cat_ota_fg = False
         self.agg_type='msa'
-        self.minimal_limit = 1
-        self.maximal_limit = 50
+        self.minimal_limit = 0
+        self.maximal_limit = 100
+        self.decouple_reg = True
         self.conf_sim_thresh = 0.99
         self.decouple_reg = True
+        
+        # onnx_export options
         self.onnx_export=False
         # topk 
         self.defualt_pre=100
+        self.backbone_only = False
+        self.head_only = False
 
     def get_model(self):
         # rewrite get model func from yolox
@@ -129,12 +138,12 @@ class Exp(MyExp):
                      'iou_window': self.iou_window, 'globalBlocks': self.globalBlocks, 'use_pre_nms': self.use_pre_nms,
                      'cat_ota_fg': self.cat_ota_fg, 'agg_type': self.agg_type, 'minimal_limit': self.minimal_limit,
                      'conf_sim_thresh': self.conf_sim_thresh, 'decouple_reg':self.decouple_reg, 'onnx_export': self.onnx_export,
-                     }
+                     'maximal_limit':self.maximal_limit}
         head = YOLOVHead(self.num_classes, self.width, in_channels=in_channels, heads=self.head, drop=self.drop_rate,
                          use_score=self.use_score, defualt_p=self.defualt_p, sim_thresh=self.sim_thresh,
                          pre_nms=self.pre_nms, ave=self.ave, defulat_pre=self.defualt_pre, test_conf=self.test_conf,
                          use_mask=self.use_mask,gmode=self.gmode,lmode=self.lmode,both_mode=self.both_mode,
-                         localBlocks = self.localBlocks,**more_args)
+                         localBlocks = self.localBlocks, input_shape=self.input_size, **more_args)
         for layer in head.stems.parameters():
             layer.requires_grad = False  # set stem fixed
         for layer in head.reg_convs.parameters():
@@ -145,7 +154,7 @@ class Exp(MyExp):
         for layer in head.reg_preds.parameters():
             layer.requires_grad = False
 
-        self.model = YOLOV(backbone, head)
+        self.model = YOLOV(backbone, head, backbone_only=self.backbone_only, head_only=self.head_only)
 
         def fix_bn(m):
             classname = m.__class__.__name__
@@ -204,12 +213,13 @@ class Exp(MyExp):
                                 max_labels=50,
                                 flip_prob=self.flip_prob,
                                 hsv_prob=self.hsv_prob),
-                            mode='random',
-                            lframe=0,
-                            gframe=batch_size,
+                            mode='uniform_w_stride',
+                            lframe=self.lframe,
+                            gframe=self.gframe,
                             data_dir=self.data_dir,
                             name='train',  #change to your own dir name
-                            COCO_anno=os.path.join(self.data_dir, self.train_ann))
+                            COCO_anno=os.path.join(self.data_dir, self.train_ann),
+                            seq_stride=self.seq_stride)
 
         dataset = vid.get_trans_loader(batch_size=batch_size, data_num_workers=4, dataset=dataset)
         return dataset
@@ -219,14 +229,14 @@ class Exp(MyExp):
         assert batch_size == self.lframe_val+self.gframe_val
         dataset_val = vid.OVIS(data_dir=self.data_dir, #change to your own dataset
                                img_size=self.test_size,
-                               mode='random',
+                               mode='uniform_w_stride',
                                COCO_anno=os.path.join(self.data_dir, self.val_ann),
                                name='val', #change to your own dir name
                                lframe=self.lframe_val,
                                gframe=self.gframe_val,
                                preproc=Vid_Val_Transform(),
-                               val=True
-                               )
+                               val=True,
+                               seq_stride=self.seq_stride)
 
         val_loader = vid.get_trans_loader(batch_size=batch_size, data_num_workers=data_num_workers, dataset=dataset_val)
         return val_loader

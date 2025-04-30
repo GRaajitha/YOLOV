@@ -9,23 +9,30 @@ class Exp(MyExp):
     def __init__(self):
         super(Exp, self).__init__()
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
-        self.data_dir = '/shared/users/raajitha/YOLOVexperiments/night_time_data/'
-        self.train_ann = "train_annotations_coco_fmt.json"
-        self.val_ann = "train_annotations_coco_fmt.json"
-        self.test_ann = "train_annotations_coco_fmt.json"
-        self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/nightime_yolox_swintiny_overfit_{date.today()}"
-        self.basic_lr_per_img = 0.0005 / 32.0
-        self.save_history_ckpt = False
-        self.max_epoch = 10
-        self.input_size = (1920,1920)
-        self.test_size = (1920,1920)
-        self.eval_interval = 1
-        self.warmup_epochs = 1
-        self.no_aug_epochs = 7
-        self.num_classes = 3
-        self.test_conf = 0.001
+        
+        # Define yourself dataset path
+        self.num_classes = 8  
+        self.data_dir = "/shared/vision/dataset/"
+        self.train_ann = "metadata/v7_8_cls/train_annotations_coco_fmt.json"
+        self.val_ann = "metadata/v7_8_cls/val_annotations_coco_fmt.json"
+        self.test_ann = "metadata/v7_8_cls/test_annotations_coco_fmt.json"
+        self.input_size = (1080, 1920)
+        self.test_size = (1080, 1920)
         self.train_name = ''
         self.val_name = ''
+        self.wandb_name = f"yoloxs_v7_8cls_1080x1920_20ep_{date.today()}"
+        self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/{self.wandb_name}"
+
+        self.basic_lr_per_img = 0.0005 / 32.0
+        self.save_history_ckpt = False
+        self.max_epoch = 20
+        self.eval_interval = 1
+        self.warmup_epochs = 3
+        self.no_aug_epochs = 10
+        self.test_conf = 0.001
+        self.nmsthre = 0.5
+        self.data_num_workers = 6
+        self.momentum = 0.9
         self.mosaic_scale = (0.1, 2)
         self.enable_mixup = False
 
@@ -39,7 +46,7 @@ class Exp(MyExp):
         in_channels = [192, 384, 768]
         out_channels = [192, 384, 768]
         from yolox.models import YOLOX, YOLOPAFPN_Swin, YOLOXHead
-        backbone = YOLOPAFPN_Swin(in_channels=in_channels, out_channels=out_channels, act=self.act,in_features=(1,2,3))
+        backbone = YOLOPAFPN_Swin(in_channels=in_channels, out_channels=out_channels, act=self.act,in_features=(1,2,3), input_size=self.input_size)
         head = YOLOXHead(self.num_classes, self.width, in_channels=out_channels, act=self.act)
         self.model = YOLOX(backbone, head)
 
