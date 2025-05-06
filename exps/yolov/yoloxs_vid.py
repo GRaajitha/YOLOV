@@ -22,10 +22,10 @@ class Exp(MyExp):
         self.test_size = (2160, 3840)
         self.train_name = ''
         self.val_name = ''
-        self.wandb_name = f"yoloxs_v7_8cls_1080x1920_20ep_trimmed1000_64-500seq_{date.today()}"
+        self.wandb_name = f"yoloxs_v7_8cls_3840x2160_20ep_{date.today()}"
         self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/{self.wandb_name}"
 
-        self.max_epoch = 40
+        self.max_epoch = 20
         self.no_aug_epochs = 10
         self.warmup_epochs = 3
         self.eval_interval = 1

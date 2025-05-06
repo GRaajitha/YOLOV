@@ -16,11 +16,11 @@ class Exp(MyExp):
         self.train_ann = "metadata/v7_8_cls/train_annotations_coco_fmt.json"
         self.val_ann = "metadata/v7_8_cls/val_annotations_coco_fmt.json"
         self.test_ann = "metadata/v7_8_cls/test_annotations_coco_fmt.json"
-        self.input_size = (1080, 1920)
-        self.test_size = (1080, 1920)
+        self.input_size = (2160, 3840)
+        self.test_size = (2160, 3840)
         self.train_name = ''
         self.val_name = ''
-        self.wandb_name = f"yoloxs_v7_8cls_1080x1920_20ep_{date.today()}"
+        self.wandb_name = f"yolox_swin_tiny_v7_8cls_3840x2160_20ep_{date.today()}"
         self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/{self.wandb_name}"
 
         self.basic_lr_per_img = 0.0005 / 32.0
