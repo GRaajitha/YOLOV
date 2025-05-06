@@ -135,6 +135,7 @@ def main(exp, args, num_gpu):
 
     if rank == 0:
         os.makedirs(file_name, exist_ok=True)
+        wandb.init(project="YOLOV-tools", name=f"eval_yolox_{args.experiment_name}_{date.today()}")
 
     setup_logger(file_name, distributed_rank=rank, filename="val_log.txt", mode="a")
     logger.info("Args: {}".format(args))
@@ -189,8 +190,6 @@ def main(exp, args, num_gpu):
     else:
         trt_file = None
         decoder = None
-
-    wandb.init(project="YOLOV-tools", name=f"eval_yolox_{args.experiment_name}_{date.today()}")
 
     # start evaluate
     *_, summary = evaluator.evaluate(

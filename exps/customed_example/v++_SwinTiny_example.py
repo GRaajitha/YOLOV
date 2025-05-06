@@ -8,6 +8,7 @@ from loguru import logger
 from yolox.data.datasets import vid
 from yolox.data.data_augment import Vid_Val_Transform
 from datetime import datetime
+
 class Exp(MyExp):
     def __init__(self):
         super(Exp, self).__init__()
@@ -21,8 +22,8 @@ class Exp(MyExp):
         self.train_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_train_split_video_sequences.json"
         self.val_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_val_split_video_sequences.json"
         self.test_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_test_split_video_sequences.json"
-        self.input_size = (1080, 1920)
-        self.test_size = (1080, 1920)
+        self.input_size = (2160, 3840)
+        self.test_size = (2160, 3840)
 
         self.max_epoch = 20
         self.basic_lr_per_img = 0.0005 / 16
@@ -41,7 +42,7 @@ class Exp(MyExp):
         self.loc_fuse_type = 'identity'
         # self.output_dir = "./V++_outputs"
         cur_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-        self.wandb_name = f"yolov++_swin_tiny_uniform_w_stride{self.seq_stride}_gframe{self.gframe}_8cls_2kinp_trimmed1000_fixedlen_02_26_split_vid_20ep_{cur_time}"
+        self.wandb_name = f"yolov++_swin_tiny_uniform_w_stride{self.seq_stride}_gframe{self.gframe}_8cls_2kinp_trimmed100_fixedlen_02_27_split_vid_20ep_{cur_time}"
         self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/{self.wandb_name}"
         self.stem_lr_ratio = 0.1
         self.ota_mode = True
@@ -77,7 +78,8 @@ class Exp(MyExp):
                 backbone = YOLOPAFPN_Swin(in_channels=in_channels,
                                           out_channels=out_channels,
                                           act=self.act,
-                                          in_features=(1, 2, 3))
+                                          in_features=(1, 2, 3),
+                                          input_size=self.input_size)
             elif self.backbone_name == 'Swin_Base':
                 in_channels = [256, 512, 1024]
                 out_channels = [256, 512, 1024]
@@ -91,8 +93,8 @@ class Exp(MyExp):
                                           pretrain_img_size=self.pretrain_img_size,
                                           window_size=self.window_size,
                                           width=self.width,
-                                          depth=self.depth
-                                          )
+                                          depth=self.depth,
+                                          input_size=self.input_size)
         elif 'Focal' in self.backbone_name:
             from yolox.models import YOLOPAFPN_focal
             fpn_in_channles = [96 * 4, 96 * 8, 96 * 16]
