@@ -36,7 +36,7 @@ class Exp(MyExp):
         self.lmode = False
         self.lframe = 0
         self.lframe_val = self.lframe
-        self.gframe = 4
+        self.gframe = 8
         self.gframe_val = self.gframe
         self.seq_stride = 8
         self.use_loc_emd = False
