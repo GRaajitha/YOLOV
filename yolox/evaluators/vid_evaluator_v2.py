@@ -213,8 +213,8 @@ class VIDEvaluator:
                 label = [label[0]]
             
             #vizualize
-            if cur_iter == 0 and get_rank() == 0:
-                self.visualize_inferences(imgs, label, outputs)
+            # if cur_iter == 0 and get_rank() == 0:
+            #     self.visualize_inferences(imgs, label, outputs)
 
             temp_data_list, temp_label_list = self.convert_to_coco_format(outputs, info_imgs, copy.deepcopy(label), path)
             data_list.extend(temp_data_list) #preds

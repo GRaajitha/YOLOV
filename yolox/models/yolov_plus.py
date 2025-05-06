@@ -57,8 +57,8 @@ class YOLOV(nn.Module):
     def forward(self, x=None, targets=None,nms_thresh=0.5,lframe=0,gframe=32, fpn_out0=None, fpn_out1=None, fpn_out2=None):
         # fpn output content features of [dark3, dark4, dark5]
         if self.training:
-            if targets is not None and self.count==0 and get_rank()==0:
-                self.visualize_inputs(x, targets)
+            # if targets is not None and self.count==0 and get_rank()==0:
+            #     self.visualize_inputs(x, targets)
 
             fpn_outs = self.backbone(x)
 

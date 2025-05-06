@@ -167,6 +167,19 @@ class Exp(MyExp):
         if self.fix_bn:
             self.model.apply(fix_bn)
         self.model.head.initialize_biases(1e-2)
+
+        # Add check for trainable parameters
+        trainable_params = 0
+        total_params = 0
+        for name, param in self.model.named_parameters():
+            total_params += 1
+            if param.requires_grad:
+                trainable_params += 1
+                logger.info(f"Trainable parameter: {name}")
+        logger.info(f"Total parameters: {total_params}, Trainable parameters: {trainable_params}")
+        if trainable_params == 0:
+            raise RuntimeError("No trainable parameters found in model!")
+
         return self.model
 
     def get_optimizer(self, batch_size):

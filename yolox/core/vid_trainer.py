@@ -163,6 +163,28 @@ class Trainer:
 
         loss = outputs["total_loss"]
 
+        # Add check for parameters requiring grad
+        has_grad = False
+        for param in self.model.parameters():
+            if param.requires_grad:
+                has_grad = True
+                break
+        if not has_grad:
+            import pdb; pdb.set_trace()
+            logger.error("No parameters require gradients! Check model initialization.")
+            raise RuntimeError("No parameters require gradients")
+
+        # Check if loss is 0
+        if loss.item() == 0:
+            # import pdb; pdb.set_trace()
+            with torch.cuda.amp.autocast(enabled=self.amp_training):
+                outputs = self.model(inps, targets, lframe = self.exp.lframe, gframe = self.exp.gframe)
+            loss = outputs["total_loss"]
+            if loss.item() == 0:
+                import pdb; pdb.set_trace()
+                # logger.error("Loss is 0! Check loss computation.")
+                # raise RuntimeError("Loss is 0")
+
         self.optimizer.zero_grad()
         self.scaler.scale(loss).backward()
         self.scaler.step(self.optimizer)
