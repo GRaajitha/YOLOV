@@ -9,7 +9,7 @@ from .yolo_pafpn import YOLOPAFPN
 import os
 import cv2
 import numpy as np
-
+import wandb
 class YOLOX(nn.Module):
     """
     YOLOX model module. The module list is defined by create_yolov3_modules function.
@@ -53,6 +53,8 @@ class YOLOX(nn.Module):
                     img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0,0,255), 3)
 
                 # Save the image
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                wandb.log({f"inputs/{i}": wandb.Image(img)})
                 # cv2.imwrite(os.path.join(output_dir, f"image_{i}.png"), img)
             self.count += 1
 

@@ -1,12 +1,31 @@
 VID_classes = (
-    "Airplane",
-    "Paraglider",
-    "Helicopter",
-    "Zip",
-    "Ultralight",
-    "Glider",
-    "Bird",
-    "Balloon"
+    # "Airplane",
+    # "Paraglider",
+    # "Helicopter",
+    # "Zip",
+    # "Ultralight",
+    # "Glider",
+    # "Bird",
+    # "Balloon"
+    # "Airborne", 
+    # "Zip", 
+    # "Glider", 
+    # "Balloon", 
+    # "Paraglider", 
+    # "Bird", 
+    # "Flock", 
+    # "Airplane", 
+    # "Ultralight", 
+    # "Helicopter", 
+    # "Unknown", 
+    # "HangGlider",
+    # "CommercialAirliner",
+    # "Drone",
+    # "Artificial", 
+    # "Natural"
+    'aircraft',
+    'aircraft-nav-light',
+    'strobe',
 )
 
 # Epic_classes = (

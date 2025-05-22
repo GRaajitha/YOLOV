@@ -13,21 +13,21 @@ class Exp(MyExp):
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
 
         # Define yourself dataset path
-        self.num_classes = 8  
+        self.num_classes = 3  
         self.data_dir = "/shared/vision/dataset/"
-        self.train_ann = "metadata/v7_8_cls/train_annotations_coco_fmt.json"
-        self.val_ann = "metadata/v7_8_cls/val_annotations_coco_fmt.json"
-        self.test_ann = "metadata/v7_8_cls/test_annotations_coco_fmt.json"
+        self.train_ann = "zeromatter_synthetic/coco_train_06_04.json"
+        self.val_ann = "zeromatter_synthetic/coco_val_06_04.json"
+        self.test_ann = ""
         self.input_size = (1080, 1920)
         self.test_size = (1080, 1920)
         self.train_name = ''
         self.val_name = ''
-        self.wandb_name = f"yoloxs_v7_8cls_1080x1920_20ep_{date.today()}"
+        self.wandb_name = f"yoloxs_zm_test_{date.today()}"
         self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/{self.wandb_name}"
 
         self.max_epoch = 20
-        self.no_aug_epochs = 10
-        self.warmup_epochs = 3
+        self.no_aug_epochs = 5
+        self.warmup_epochs = 2
         self.eval_interval = 1
         self.print_interval = 10
         self.min_lr_ratio = 0.05
@@ -39,7 +39,8 @@ class Exp(MyExp):
         self.momentum = 0.9
         #COCO API has been changed
         self.data_shuffle = False
-        self.mosaic_scale = (0.5, 1.5)
+        self.mosaic_prob = 0.0
+        self.mixup_prob = 0.0
         self.enable_mixup = False
 
     
