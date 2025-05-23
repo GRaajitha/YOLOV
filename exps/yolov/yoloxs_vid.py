@@ -30,8 +30,8 @@ class Exp(MyExp):
         self.warmup_epochs = 3
         self.eval_interval = 1
         self.print_interval = 10
-        self.min_lr_ratio = 0.05
-        self.basic_lr_per_img = 0.000125
+        self.min_lr_ratio = 0.00000005
+        self.basic_lr_per_img = 0.00003125
         self.multiscale_range = 5
         self.test_conf = 0.001
         self.nmsthre = 0.5

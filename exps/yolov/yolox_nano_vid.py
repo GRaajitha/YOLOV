@@ -22,7 +22,7 @@ class Exp(MyExp):
         self.test_size = (1080, 1920)
         self.train_name = ''
         self.val_name = ''
-        self.wandb_name = f"test_yolox_nano_v7_8_cls_1080x1920_20ep_{date.today()}"
+        self.wandb_name = f"yolox_nano_v7_8_cls_1080x1920_20ep_{date.today()}"
         self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/{self.wandb_name}"
 
         self.max_epoch = 20
@@ -30,8 +30,8 @@ class Exp(MyExp):
         self.warmup_epochs = 3
         self.eval_interval = 1
         self.print_interval = 10
-        self.min_lr_ratio = 0.05
-        self.basic_lr_per_img = 0.000125
+        self.min_lr_ratio = 0.00000005
+        self.basic_lr_per_img = 0.00003125
         self.multiscale_range = 5
         self.test_conf = 0.001
         self.nmsthre = 0.5
@@ -39,8 +39,9 @@ class Exp(MyExp):
         self.momentum = 0.9
         #COCO API has been changed
         self.data_shuffle = False
+        self.mosaic_prob = 0.0
         self.mosaic_scale = (0.5, 1.5)
-        self.enable_mixup = False
+        self.enable_mixup = True
 
     
     def get_optimizer(self, batch_size):
