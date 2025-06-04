@@ -59,6 +59,9 @@ class Exp(MyExp):
         
         # onnx_export options
         self.onnx_export=False
+        self.fpn0_shape = (64, 136, 240)
+        self.fpn1_shape = (128, 68, 120)
+        self.fpn2_shape = (256, 34, 60)
         # topk 
         self.defualt_pre=100
         self.backbone_only = False
