@@ -55,7 +55,6 @@ def make_parser():
     )
     parser.add_argument("--conf", default=0.5, type=float, help="test conf")
     parser.add_argument("--nms", default=0.5, type=float, help="test nms threshold")
-    parser.add_argument("--tsize", default=None, type=int, help="test img size")
     parser.add_argument(
         "--fp16",
         dest="fp16",
@@ -224,11 +223,14 @@ def imageflow_demo(predictor, vis_folder, current_time, args):
     vid_writer = cv2.VideoWriter(
         save_path, cv2.VideoWriter_fourcc(*"mp4v"), fps, (int(width), int(height))
     )
+    i = 0
     while True:
         ret_val, frame = cap.read()
         if ret_val:
             outputs, img_info = predictor.inference(frame)
             result_frame = predictor.visual(outputs[0], img_info, predictor.confthre)
+            cv2.imwrite(f"{save_folder}/frame{i}.png", result_frame)
+            i +=1
             if args.save_result:
                 vid_writer.write(result_frame)
             ch = cv2.waitKey(1)
@@ -259,8 +261,6 @@ def main(exp, args):
         exp.test_conf = args.conf
     if args.nms is not None:
         exp.nmsthre = args.nms
-    if args.tsize is not None:
-        exp.test_size = (args.tsize, args.tsize)
 
     model = exp.get_model()
     logger.info("Model Summary: {}".format(get_model_info(model, exp.test_size)))

@@ -38,14 +38,14 @@ class Exp(MyExp):
         self.lframe_val = self.lframe
         self.gframe = 4
         self.gframe_val = self.gframe
-        self.seq_stride = 8
+        self.seq_stride = 1
         self.use_loc_emd = False
         self.iou_base = False
         self.reconf = True
         self.loc_fuse_type = 'identity'
         # self.output_dir = "./V++_outputs"
         cur_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-        self.wandb_name = f"yolov++_base_x_s_stride{self.seq_stride}_gframe{self.gframe}_8cls_2kinp_06_04_v2_vid_data_{cur_time}"
+        self.wandb_name = f"zm_night_yolov++_base_x_s_stride{self.seq_stride}_gframe{self.gframe}_3cls_2kinp_06_04_v2_vid_data_{cur_time}"
         self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/{self.wandb_name}"
         self.stem_lr_ratio = 0.1
         self.ota_mode = True
