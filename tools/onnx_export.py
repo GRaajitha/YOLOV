@@ -91,7 +91,7 @@ def load_model(args):
 
 def load_fpn_outputs(exp, base_path, out_dir):
     """Loads precomputed FPN outputs from files."""
-    fpn_shapes = {"fpn_out0": (128, 136, 240), "fpn_out1": (256, 68, 120), "fpn_out2": (512, 34, 60)}
+    fpn_shapes = {"fpn_out0": exp.fpn0_shape, "fpn_out1": exp.fpn1_shape, "fpn_out2": exp.fpn2_shape}
     fpn_outputs = {}
 
     for i, shape in enumerate(fpn_shapes):

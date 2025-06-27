@@ -13,8 +13,8 @@ from datetime import datetime
 class Exp(MyExp):
     def __init__(self):
         super(Exp, self).__init__()
-        self.depth = 0.33  # 1#0.67
-        self.width = 0.5  # 1#0.75
+        self.depth = 0.33
+        self.width = 0.25
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
 
         # Define yourself dataset path
@@ -27,7 +27,7 @@ class Exp(MyExp):
         self.test_size = (1080, 1920)
 
         self.max_epoch = 20
-        self.basic_lr_per_img = 0.0005 / 16
+        self.basic_lr_per_img = 0.001
         self.warmup_epochs = 0
         self.no_aug_epochs = 2
         self.pre_no_aug = 2
@@ -45,7 +45,7 @@ class Exp(MyExp):
         self.loc_fuse_type = 'identity'
         # self.output_dir = "./V++_outputs"
         cur_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-        self.wandb_name = f"yolov++_swin_tiny_uniform_w_stride{self.seq_stride}_gframe{self.gframe}_8cls_2kinp_trimmed1000_fixedlen_02_26_split_vid_20ep_{cur_time}"
+        self.wandb_name = f"yolov++_yoloxnano_uniform_w_stride{self.seq_stride}_gframe{self.gframe}_8cls_2kinp_trim100_fixedlen_02_27_split_vid_20ep_{cur_time}"
         self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/{self.wandb_name}"
         self.stem_lr_ratio = 0.1
         self.ota_mode = True
@@ -59,9 +59,9 @@ class Exp(MyExp):
         
         # onnx_export options
         self.onnx_export=False
-        self.fpn0_shape = (128, 136, 240)
-        self.fpn1_shape = (256, 68, 120)
-        self.fpn2_shape = (512, 34, 60)
+        self.fpn0_shape = (64, 136, 240)
+        self.fpn1_shape = (128, 68, 120)
+        self.fpn2_shape = (256, 34, 60)
         # topk 
         self.defualt_pre=100
         self.backbone_only = False

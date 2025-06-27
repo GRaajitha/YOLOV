@@ -9,7 +9,7 @@ class Exp(MyExp):
     def __init__(self):
         super(Exp, self).__init__()
         self.depth = 0.33
-        self.width = 0.50
+        self.width = 0.25
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
 
         # Define yourself dataset path
@@ -22,7 +22,7 @@ class Exp(MyExp):
         self.test_size = (1080, 1920)
         self.train_name = ''
         self.val_name = ''
-        self.wandb_name = f"yoloxs_v7_8cls_1080x1920_20ep_{date.today()}"
+        self.wandb_name = f"yolox_nano_v7_8_cls_1080x1920_20ep_{date.today()}"
         self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/{self.wandb_name}"
 
         self.max_epoch = 20
@@ -39,13 +39,10 @@ class Exp(MyExp):
         self.momentum = 0.9
         #COCO API has been changed
         self.data_shuffle = False
+        self.mosaic_prob = 0.0
         self.mosaic_scale = (0.5, 1.5)
-        self.enable_mixup = False
-        # metrics
-        self.per_class_AP=True
-        self.per_class_AR=True
-        self.per_attribute_per_class=True
-        self.attribute_names=["horizon", "occlusion", "clipping", "primary_terrain", "secondary_terrain", "terrain_modifier", "low_visibility", "annotated_weather", "cloud_coverage", "intruder_lateral_view", "intruder_vertical_view", "image_quality"]
+        self.enable_mixup = True
+
     
     def get_optimizer(self, batch_size):
         if "optimizer" not in self.__dict__:
