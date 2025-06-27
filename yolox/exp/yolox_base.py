@@ -116,6 +116,12 @@ class Exp(BaseExp):
         #debug for vid tasks
         self.debug = False
 
+        # evaluator  
+        self.per_class_AP=True
+        self.per_class_AR=True
+        self.per_attribute_per_class=True
+        self.attribute_names=["horizon", "occlusion", "clipping", "primary_terrain", "secondary_terrain", "terrain_modifier", "low_visibility", "annotated_weather", "cloud_coverage", "intruder_lateral_view", "intruder_vertical_view", "image_quality"]
+
     def get_model(self):
         from yolox.models import YOLOX, YOLOPAFPN, YOLOXHead
 

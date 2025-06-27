@@ -127,20 +127,22 @@ class VIDEvaluator:
             img = img.transpose(1, 2, 0)
             img = np.ascontiguousarray(img)
             # Draw bounding boxes
-            for j in range(label[i].shape[0]):
-                cls, xmin, ymin, xmax, ymax = label[i][j]
-                xmin, ymin, xmax, ymax = map(int, [xmin, ymin, xmax, ymax])
-                img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0,255,0), 3)
-                img = cv2.putText(img, str(cls.item()), (xmin-5, ymin-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
+            if label[i] != None:
+                for j in range(label[i].shape[0]):
+                    cls, xmin, ymin, xmax, ymax = label[i][j]
+                    xmin, ymin, xmax, ymax = map(int, [xmin, ymin, xmax, ymax])
+                    img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0,255,0), 3)
+                    img = cv2.putText(img, str(cls.item()), (xmin-5, ymin-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
 
-            for j in range(outputs[i].shape[0]):
-                xmin, ymin, xmax, ymax, obj_score, cls_score, cls = outputs[i][j]
-                xmin, ymin, xmax, ymax = map(int, [xmin, ymin, xmax, ymax])
-                score = obj_score * cls_score
-                score = round(score.item(), 3)
-                if score > 0.001:
-                    img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0,0,255), 3)
-                    # img = cv2.putText(img, str(f"{cls.item()}_{score}"), (xmin+5, ymin+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2)
+            if outputs[i] != None:
+                for j in range(outputs[i].shape[0]):
+                    xmin, ymin, xmax, ymax, obj_score, cls_score, cls = outputs[i][j]
+                    xmin, ymin, xmax, ymax = map(int, [xmin, ymin, xmax, ymax])
+                    score = obj_score * cls_score
+                    score = round(score.item(), 3)
+                    if score > 0.001:
+                        img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0,0,255), 3)
+                        # img = cv2.putText(img, str(f"{cls.item()}_{score}"), (xmin+5, ymin+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2)
 
             # log the image
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
