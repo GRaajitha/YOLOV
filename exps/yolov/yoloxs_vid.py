@@ -41,7 +41,11 @@ class Exp(MyExp):
         self.data_shuffle = False
         self.mosaic_scale = (0.5, 1.5)
         self.enable_mixup = False
-
+        # metrics
+        self.per_class_AP=True
+        self.per_class_AR=True
+        self.per_attribute_per_class=True
+        self.attribute_names=["horizon", "occlusion", "clipping", "primary_terrain", "secondary_terrain", "terrain_modifier", "low_visibility", "annotated_weather", "cloud_coverage", "intruder_lateral_view", "intruder_vertical_view", "image_quality"]
     
     def get_optimizer(self, batch_size):
         if "optimizer" not in self.__dict__:

@@ -320,8 +320,10 @@ class Exp(BaseExp):
             num_classes=self.num_classes,
             testdev=testdev,
             max_epoch=self.max_epoch,
-            per_class_AP=True,
-            per_class_AR=True,
+            per_class_AP=self.per_class_AP,
+            per_class_AR=self.per_class_AR,
+            per_attribute_per_class=self.per_attribute_per_class,
+            attribute_names=self.attribute_names,
         )
         return evaluator
 
