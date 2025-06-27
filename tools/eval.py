@@ -153,6 +153,8 @@ def main(exp, args, num_gpu):
     evaluator = exp.get_evaluator(args.batch_size, is_distributed, args.test, args.legacy)
     evaluator.per_class_AP = True
     evaluator.per_class_AR = True
+    evaluator.per_attribute_per_class = True
+    evaluator.attribute_names = ["horizon", "occlusion"]
 
     torch.cuda.set_device(rank)
     model.cuda(rank)
@@ -190,12 +192,16 @@ def main(exp, args, num_gpu):
         trt_file = None
         decoder = None
 
-    wandb.init(project="YOLOV-tools", name=f"eval_yolox_{args.experiment_name}_{date.today()}")
+    wandb.init(project="YOLOV-tools", name=f"attribute_metrics_test_yolox_{args.experiment_name}_{date.today()}")
 
     # start evaluate
-    *_, summary = evaluator.evaluate(
+    ap50_95, ap50, summary = evaluator.evaluate(
         model, exp.max_epoch-1, is_distributed, args.fp16, trt_file, decoder, exp.test_size
     )
+    wandb.log({
+        "val/COCOAP50": ap50,
+        "val/COCOAP50_95": ap50_95,
+    })
     logger.info("\n" + summary)
 
 

@@ -4,7 +4,7 @@ import numpy as np
 import io
 import contextlib
 import json
-from yolox.evaluators.coco_evaluator import per_class_AR_table, per_class_AP_table
+from yolox.evaluators.coco_evaluator import per_class_AR_table, per_class_AP_table, evaluate_per_attribute_per_class, log_per_attribute_per_class_metrics
 import tempfile
 import os
 import matplotlib.pyplot as plt
@@ -65,8 +65,8 @@ def plot_pr_curve(cocoEval, iou_threshold, output_filename):
 
 
 # Define file paths
-gt_file = "/shared/vision/experiments/vision-detector/v7_ss10per_baseline_2024-05-30_01-47-31/val_gt_coco_fmt.json"
-dt_file = "/shared/vision/experiments/vision-detector/v7_ss10per_baseline_2024-05-30_01-47-31/val_inference_results.json"
+gt_file = "/shared/vision/experiments/vision-detector/full_test_raajitha_v7_8_cls_2025-04-17_23-15-30_ovis_v7_trimmed1000_64-500seq_test_coco_vid_06_06/test_gt_coco_fmt.json"
+dt_file = "/shared/vision/experiments/vision-detector/full_test_raajitha_v7_8_cls_2025-04-17_23-15-30_ovis_v7_trimmed1000_64-500seq_test_coco_vid_06_06/test_inference_results.json"
 
 # Load data
 gt_data = json.load(open(gt_file, "r"))
@@ -76,8 +76,8 @@ dt_data = json.load(open(dt_file, "r"))
 for ann in gt_data["annotations"]:
     if 'iscrowd' not in ann:
         ann['iscrowd'] = 0
-    if ann["category_id"] in [0, 6, 10, 11, 12, 13, 14, 15]:
-        ann['ignore'] = 1
+    # if ann["category_id"] in [0, 6, 10, 11, 12, 13, 14, 15]:
+    #     ann['ignore'] = 1
     if 'area' not in ann:
         # Calculate area from bbox [x, y, width, height]
         bbox = ann['bbox']
@@ -86,24 +86,33 @@ for ann in gt_data["annotations"]:
         #     ann['ignore'] = 1
 
 # Define categories sorted by ID
-categories = [
-    {'supercategory': 'none', 'id': 0, 'name': 'Airborne'},
-    {'supercategory': 'none', 'id': 1, 'name': 'Zip'},
-    {'supercategory': 'none', 'id': 2, 'name': 'Glider'},
-    {'supercategory': 'none', 'id': 3, 'name': 'Balloon'},
-    {'supercategory': 'none', 'id': 4, 'name': 'Paraglider'},
-    {'supercategory': 'none', 'id': 5, 'name': 'Bird'},
-    {'supercategory': 'none', 'id': 6, 'name': 'Flock'},
-    {'supercategory': 'none', 'id': 7, 'name': 'Airplane'},
-    {'supercategory': 'none', 'id': 8, 'name': 'Ultralight'},
-    {'supercategory': 'none', 'id': 9, 'name': 'Helicopter'},
-    {'supercategory': 'none', 'id': 10, 'name': 'Unknown'},
-    {'supercategory': 'none', 'id': 11, 'name': 'HangGlider'},
-    {'supercategory': 'none', 'id': 12, 'name': 'CommercialAirliner'},
-    {'supercategory': 'none', 'id': 13, 'name': 'Drone'},
-    {'supercategory': 'none', 'id': 14, 'name': 'Artificial'},
-    {'supercategory': 'none', 'id': 15, 'name': 'Natural'}
-]
+# categories = [
+#     {'supercategory': 'none', 'id': 0, 'name': 'Airborne'},
+#     {'supercategory': 'none', 'id': 1, 'name': 'Zip'},
+#     {'supercategory': 'none', 'id': 2, 'name': 'Glider'},
+#     {'supercategory': 'none', 'id': 3, 'name': 'Balloon'},
+#     {'supercategory': 'none', 'id': 4, 'name': 'Paraglider'},
+#     {'supercategory': 'none', 'id': 5, 'name': 'Bird'},
+#     {'supercategory': 'none', 'id': 6, 'name': 'Flock'},
+#     {'supercategory': 'none', 'id': 7, 'name': 'Airplane'},
+#     {'supercategory': 'none', 'id': 8, 'name': 'Ultralight'},
+#     {'supercategory': 'none', 'id': 9, 'name': 'Helicopter'},
+#     {'supercategory': 'none', 'id': 10, 'name': 'Unknown'},
+#     {'supercategory': 'none', 'id': 11, 'name': 'HangGlider'},
+#     {'supercategory': 'none', 'id': 12, 'name': 'CommercialAirliner'},
+#     {'supercategory': 'none', 'id': 13, 'name': 'Drone'},
+#     {'supercategory': 'none', 'id': 14, 'name': 'Artificial'},
+#     {'supercategory': 'none', 'id': 15, 'name': 'Natural'}
+# ]
+
+categories=[{'supercategory': 'none', 'id': 0, 'name': 'Airplane'},
+            {'supercategory': 'none', 'id': 1, 'name': 'Paraglider'},
+            {'supercategory': 'none', 'id': 2, 'name': 'Helicopter'},
+            {'supercategory': 'none', 'id': 3, 'name': 'Zip'},
+            {'supercategory': 'none', 'id': 4, 'name': 'Ultralight'},
+            {'supercategory': 'none', 'id': 5, 'name': 'Glider'},
+            {'supercategory': 'none', 'id': 6, 'name': 'Bird'},
+            {'supercategory': 'none', 'id': 7, 'name': 'Balloon'}]
 
 # Create COCO format dictionary for ground truth
 gt_coco = {
@@ -142,11 +151,25 @@ with contextlib.redirect_stdout(redirect_string):
     cocoEval.summarize(compute_confidence_matrix=True)
 info += redirect_string.getvalue()
 
+wandb.init(project="YOLOV-tools", name="test_attribute_metrics")
 cat_ids = list(cocoGt.cats.keys())
 cat_names = [cocoGt.cats[catId]['name'] for catId in sorted(cat_ids)]
 AP_table, per_class_AP = per_class_AP_table(cocoEval, class_names=cat_names)
+wandb.log({f"val/mAP_{name}":value/100 for name, value in per_class_AP.items()})
 info += "per class AP:\n" + AP_table + "\n"
 AR_table, per_class_AR = per_class_AR_table(cocoEval, class_names=cat_names)
+wandb.log({f"val/mAR_{name}":value/100 for name, value in per_class_AR.items()})
 info += "per class AR:\n" + AR_table + "\n"
 
 print(cocoEval.stats[0], cocoEval.stats[1], info, cocoEval.conf_matrix)
+
+ap50_95, ap50 =cocoEval.stats[0], cocoEval.stats[1]
+wandb.log({
+    "val/COCOAP50": ap50,
+    "val/COCOAP50_95": ap50_95,
+})
+# attribute_names = ["horizon", "occlusion", "clipping", "primary_terrain", "secondary_terrain", "terrain_modifier", "low_visibility", "annotated_weather", "cloud_coverage", "intruder_lateral_view", "intruder_vertical_view", "image_quality"]
+attribute_names = ["horizon", "occlusion"]
+
+attr_results = evaluate_per_attribute_per_class(cocoGt, cocoDt, cat_names, attribute_names=attribute_names)
+log_per_attribute_per_class_metrics(attr_results, iouThrs=[0.5])
