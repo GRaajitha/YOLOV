@@ -15,22 +15,25 @@ class Exp(MyExp):
         # Define yourself dataset path
         self.num_classes = 8  
         self.data_dir = "/shared/vision/dataset/"
-        self.train_ann = "metadata/v7_8_cls/train_annotations_coco_fmt.json"
-        self.val_ann = "metadata/v7_8_cls/val_annotations_coco_fmt.json"
-        self.test_ann = "metadata/v7_8_cls/test_annotations_coco_fmt.json"
+        self.train_ann = "metadata/v8/v3.0onwards_8_cls_70_30split_06_27_15_05/train_annotations_coco_fmt.json"
+        self.val_ann = "metadata/v8/v3.0onwards_8_cls_70_30split_06_27_15_05/val_annotations_coco_fmt.json"
+        self.test_ann = "metadata/v8/v3.0onwards_8_cls_70_30split_06_27_15_05/test_annotations_coco_fmt.json"
         self.input_size = (1080, 1920)
         self.test_size = (1080, 1920)
         self.train_name = ''
         self.val_name = ''
-        self.wandb_name = f"yolox_nano_v7_8_cls_1080x1920_20ep_{date.today()}"
+        self.wandb_name = f"yolox_nano_2k_v8_8cls_06_27_15_05_ont3_0onw_no_tiny_1080x1920_20ep_{date.today()}"
         self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/{self.wandb_name}"
+        self.legacy = True
+        self.mean = [0.38005123, 0.41535488, 0.44605284]
+        self.std = [0.24997628, 0.25999655, 0.28193627]
 
         self.max_epoch = 20
         self.no_aug_epochs = 10
         self.warmup_epochs = 3
         self.eval_interval = 1
         self.print_interval = 10
-        self.min_lr_ratio = 0.00000005
+        self.min_lr_ratio = 0.0000005
         self.basic_lr_per_img = 0.00003125
         self.multiscale_range = 5
         self.test_conf = 0.001
@@ -42,7 +45,12 @@ class Exp(MyExp):
         self.mosaic_prob = 0.0
         self.mosaic_scale = (0.5, 1.5)
         self.enable_mixup = True
-
+        # metrics
+        self.per_class_AP=True
+        self.per_class_AR=True
+        self.per_attribute_per_class=False
+        self.attribute_names=["size_cat", "horizon", "occlusion", "clipping", "primary_terrain", "secondary_terrain", "terrain_modifier", "low_visibility", "annotated_weather", "cloud_coverage", "intruder_lateral_view", "intruder_vertical_view", "image_quality"]
+    
     
     def get_optimizer(self, batch_size):
         if "optimizer" not in self.__dict__:

@@ -25,6 +25,7 @@ class Exp(MyExp):
         self.test_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_test_split_video_sequences.json"
         self.input_size = (1080, 1920)
         self.test_size = (1080, 1920)
+        self.legacy = False
 
         self.max_epoch = 20
         self.basic_lr_per_img = 0.0005 / 16

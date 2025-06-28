@@ -338,7 +338,11 @@ class Exp(BaseExp):
                 preproc=TrainTransform(
                     max_labels=120,
                     flip_prob=self.flip_prob,
-                    hsv_prob=self.hsv_prob),
+                    hsv_prob=self.hsv_prob,
+                    legacy=self.legacy,
+                    mean=self.mean,
+                    std=self.std,
+                    ),
                 degrees=self.degrees,
                 translate=self.translate,
                 mosaic_scale=self.mosaic_scale,
@@ -433,7 +437,9 @@ class Exp(BaseExp):
             tnum = self.tnum
         assert batch_size == self.lframe_val+self.gframe_val
         dataset_val = vid.VIDDataset(file_path=self.vid_val_path,
-                                     img_size=self.test_size, preproc=Vid_Val_Transform(), lframe=self.lframe_val,
+                                     img_size=self.test_size, 
+                                     preproc=Vid_Val_Transform(legacy=self.legacy,mean=self.mean,std=self.std), 
+                                     lframe=self.lframe_val,
                                      gframe=self.gframe_val, val=True, dataset_pth=self.data_dir, tnum=tnum,formal=formal,
                                      traj_linking=self.traj_linking, local_stride=self.local_stride,)
         val_loader = vid.vid_val_loader(batch_size=batch_size,
@@ -456,6 +462,7 @@ class Exp(BaseExp):
             gframe=self.gframe_val,
             first_only = False,
             max_epoch=self.max_epoch,
+            output_dir=self.output_dir,
         )
         return evaluator
 

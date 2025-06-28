@@ -135,7 +135,12 @@ class Exp(BaseExp):
             in_channels = [256, 512, 1024]
             backbone = YOLOPAFPN(self.depth, self.width, in_channels=in_channels, act=self.act, input_size=self.input_size)
             head = YOLOXHead(self.num_classes, self.width, in_channels=in_channels, act=self.act,debug=self.debug)
-            self.model = YOLOX(backbone, head)
+            preprocess_kwargs = {
+                'legacy': self.legacy,
+                'mean': self.mean,
+                'std': self.std,
+            }
+            self.model = YOLOX(backbone, head, kwargs=preprocess_kwargs)
 
         self.model.apply(init_yolo)
         self.model.head.initialize_biases(1e-2)
@@ -163,7 +168,11 @@ class Exp(BaseExp):
                 preproc=TrainTransform(
                     max_labels=50,
                     flip_prob=self.flip_prob,
-                    hsv_prob=self.hsv_prob),
+                    hsv_prob=self.hsv_prob,
+                    legacy=self.legacy,
+                    mean=self.mean,
+                    std=self.std,
+                    ),
                 cache=cache_img,
             )
 
@@ -174,7 +183,11 @@ class Exp(BaseExp):
             preproc=TrainTransform(
                 max_labels=120,
                 flip_prob=self.flip_prob,
-                hsv_prob=self.hsv_prob),
+                hsv_prob=self.hsv_prob,
+                legacy=self.legacy,
+                mean=self.mean,
+                std=self.std,
+                ),
             degrees=self.degrees,
             translate=self.translate,
             mosaic_scale=self.mosaic_scale,
@@ -285,7 +298,7 @@ class Exp(BaseExp):
         )
         return scheduler
 
-    def get_eval_loader(self, batch_size, is_distributed, testdev=False, legacy=False):
+    def get_eval_loader(self, batch_size, is_distributed, testdev=False):
         from yolox.data import COCODataset, ValTransform
 
         valdataset = COCODataset(
@@ -293,7 +306,7 @@ class Exp(BaseExp):
             json_file=self.val_ann if not testdev else self.test_ann,
             name= self.val_name if not testdev else "test2017",
             img_size=self.test_size,
-            preproc=ValTransform(legacy=legacy),
+            preproc=ValTransform(legacy=self.legacy, mean=self.mean, std=self.std),
         )
 
         if is_distributed:
@@ -314,10 +327,10 @@ class Exp(BaseExp):
 
         return val_loader
 
-    def get_evaluator(self, batch_size, is_distributed, testdev=False, legacy=False):
+    def get_evaluator(self, batch_size, is_distributed, testdev=False):
         from yolox.evaluators import COCOEvaluator
 
-        val_loader = self.get_eval_loader(batch_size, is_distributed, testdev, legacy)
+        val_loader = self.get_eval_loader(batch_size, is_distributed, testdev)
         evaluator = COCOEvaluator(
             dataloader=val_loader,
             img_size=self.test_size,
@@ -330,6 +343,7 @@ class Exp(BaseExp):
             per_class_AR=self.per_class_AR,
             per_attribute_per_class=self.per_attribute_per_class,
             attribute_names=self.attribute_names,
+            output_dir=self.output_dir,
         )
         return evaluator
 

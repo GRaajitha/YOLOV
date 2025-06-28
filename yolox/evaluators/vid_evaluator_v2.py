@@ -53,7 +53,7 @@ class VIDEvaluator:
     def __init__(
             self, dataloader, img_size, confthre, nmsthre,
             num_classes, max_epoch, testdev=False, gl_mode=False,
-            lframe=0, gframe=32, **kwargs
+            lframe=0, gframe=32, output_dir, **kwargs
     ):
         """
         Args:
@@ -77,6 +77,7 @@ class VIDEvaluator:
         self.lframe = lframe
         self.gframe = gframe
         self.max_epoch_id = max_epoch - 1
+        self.output_dir = output_dir
         self.kwargs = kwargs
         self.vid_to_coco = {
             'info': {
@@ -112,9 +113,9 @@ class VIDEvaluator:
         }
         self.testdev = testdev
         self.tmp_name_ori = './ori_pred.json'
-        self.tmp_name_refined = './refined_pred.json'
+        self.tmp_name_refined = f'{self.output_dir}/refined_pred.json'
         self.gt_ori = './gt_ori.json'
-        self.gt_refined = './gt_refined.json'
+        self.gt_refined = f'{self.output_dir}/gt_refined.json'
         self.img_id_to_name = {v:k for k,v in self.dataloader.dataset.name_id_dic.items()}
 
     def visualize_inferences(self, imgs, label, outputs):
@@ -396,17 +397,8 @@ class VIDEvaluator:
                 # json.dump(self.vid_to_coco, open(tmp, "w"), indent=4)
 
             cocoGt = pycocotools.coco.COCO(self.gt_refined)
-            # TODO: since pycocotools can't process dict in py36, write data to json file.
-
-            # _, tmp = tempfile.mkstemp()
-            # json.dump(data_dict, open(tmp, "w"), indent=4)
             cocoDt = cocoGt.loadRes(self.tmp_name_refined)
-            # try:
-            #     from yolox.layers import COCOeval_opt as COCOeval
-            # except ImportError:
-            #     from pycocotools.cocoeval import COCOeval
 
-            #     logger.warning("Use standard COCOeval.")
             from tools.cocoeval_custom import COCOeval
             cocoEval = COCOeval(cocoGt, cocoDt, annType[1])
             cocoEval.params.iouThrs = np.array([0.2, 0.5, 0.75])

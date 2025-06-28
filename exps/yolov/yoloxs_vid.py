@@ -15,15 +15,18 @@ class Exp(MyExp):
         # Define yourself dataset path
         self.num_classes = 8  
         self.data_dir = "/shared/vision/dataset/"
-        self.train_ann = "metadata/v7_8_cls/train_annotations_coco_fmt.json"
-        self.val_ann = "metadata/v7_8_cls/val_annotations_coco_fmt.json"
-        self.test_ann = "metadata/v7_8_cls/test_annotations_coco_fmt.json"
+        self.train_ann = "metadata/v8/v3.0onwards_8_cls_70_30split_06_27_15_05/train_annotations_coco_fmt.json"
+        self.val_ann = "metadata/v8/v3.0onwards_8_cls_70_30split_06_27_15_05/val_annotations_coco_fmt.json"
+        self.test_ann = "metadata/v8/v3.0onwards_8_cls_70_30split_06_27_15_05/test_annotations_coco_fmt.json"
         self.input_size = (1080, 1920)
         self.test_size = (1080, 1920)
         self.train_name = ''
         self.val_name = ''
-        self.wandb_name = f"yoloxs_v7_8cls_1080x1920_20ep_{date.today()}"
+        self.wandb_name = f"yoloxs_2k_v8_8cls_06_27_15_05_ont3_0onw_1080x1920_20ep_{date.today()}"
         self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/{self.wandb_name}"
+        self.legacy = True
+        self.mean = [0.38005123, 0.41535488, 0.44605284]
+        self.std = [0.24997628, 0.25999655, 0.28193627]
 
         self.max_epoch = 20
         self.no_aug_epochs = 10

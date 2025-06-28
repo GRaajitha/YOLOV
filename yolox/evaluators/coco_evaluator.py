@@ -26,7 +26,8 @@ from yolox.utils import (
     postprocess,
     time_synchronized,
     synchronize,
-    xyxy2xywh
+    xyxy2xywh,
+    get_rank,
 )
 
 def log_pr_curve(cocoEval, iou_threshold):
@@ -464,6 +465,7 @@ class COCOEvaluator:
         fg_AR_only: bool = False,
         per_attribute_per_class: bool = False,
         attribute_names: list = None,
+        output_dir: str = "./"
     ):
         """
         Args:
@@ -490,6 +492,7 @@ class COCOEvaluator:
         self.per_attribute_per_class = per_attribute_per_class
         self.attribute_names = attribute_names
         self.max_epoch_id = max_epoch-1
+        self.output_dir = output_dir
 
     def evaluate(
         self,
@@ -562,16 +565,14 @@ class COCOEvaluator:
                     )
                 else:
                     outputs = post_threhold(
-                        outputs, self.num_classes,
+                        outputs, self.num_classes, self.confthre
                     )
                 if is_time_record:
                     nms_end = time_synchronized()
                     nms_time += nms_end - infer_end
 
             #vizualize
-            if cur_iter == 0:
-                output_dir = "./YOLOX_Outputs/eval_viz"
-                os.makedirs(output_dir, exist_ok=True)
+            if cur_iter == 0 and get_rank()==0:
                 for i in range(imgs.shape[0]):
                     img = imgs[i]
                     img = img.cpu().detach().numpy()
@@ -587,12 +588,7 @@ class COCOEvaluator:
                             xmin, ymin, xmax, ymax = map(int, [xmin, ymin, xmax, ymax])
                             score = obj_score * cls_score
                             score = round(score.item(), 3)
-                            #if score > 0.001:
                             img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0,0,255), 3)
-                        # img = cv2.putText(img, str(f"{cls.item()}_{score}"), (xmin+5, ymin+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2)
-
-                    # log the image
-                    # cv2.imwrite(f"{output_dir}/image_{i}.png", img)
                     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                     wandb.log({f"inferences/{i}": wandb.Image(img)})
 
@@ -680,20 +676,13 @@ class COCOEvaluator:
                 json.dump(data_dict, open("./yolox_testdev_2017.json", "w"))
                 cocoDt = cocoGt.loadRes("./yolox_testdev_2017.json")
             else:
-                _, tmp = tempfile.mkstemp()
-                json.dump(data_dict, open(tmp, "w"))
-                cocoDt = cocoGt.loadRes(tmp)
-            # try:
-            #     from yolox.layers import COCOeval_opt as COCOeval
-            # except ImportError:
-            #     from pycocotools.cocoeval import COCOeval
-
-            #     logger.warning("Use standard COCOeval.")
+                dt_file = f"{self.output_dir}/predictions.json"
+                json.dump(data_dict, open(dt_file, "w"))
+                cocoDt = cocoGt.loadRes(dt_file)
 
             from tools.cocoeval_custom import COCOeval
 
             cocoEval = COCOeval(cocoGt, cocoDt, annType[1])
-            cocoEval.params.iouThrs = np.array([0.2, 0.5, 0.75])
             cocoEval.params.useCats = 1  # Enable category-based evaluation
             cocoEval.evaluate()
             cocoEval.accumulate()

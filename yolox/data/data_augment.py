@@ -294,10 +294,13 @@ def preproc_no_pad(img, input_size, swap=(2, 0, 1)):
     return resized_img, scale_x, scale_y
 
 class TrainTransform:
-    def __init__(self, max_labels=50, flip_prob=0.5, hsv_prob=1.0):
+    def __init__(self, max_labels=50, flip_prob=0.5, hsv_prob=1.0, legacy=False, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]):
         self.max_labels = max_labels
         self.flip_prob = flip_prob
         self.hsv_prob = hsv_prob
+        self.legacy = legacy
+        self.mean = mean
+        self.std = std
 
     def __call__(self, image, targets, input_dim):
         boxes = targets[:, :4].copy()
@@ -348,6 +351,11 @@ class TrainTransform:
             : self.max_labels
         ]
         padded_labels = np.ascontiguousarray(padded_labels, dtype=np.float32)
+        if self.legacy:
+            image_t = image_t[::-1, :, :].copy()
+            image_t /= 255.0
+            image_t -= np.array(self.mean).reshape(3, 1, 1)
+            image_t /= np.array(self.std).reshape(3, 1, 1)
         return image_t, padded_labels
 
 
@@ -369,9 +377,11 @@ class ValTransform:
         data
     """
 
-    def __init__(self, swap=(2, 0, 1), legacy=False):
+    def __init__(self, swap=(2, 0, 1), legacy=False, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]):
         self.swap = swap
         self.legacy = legacy
+        self.mean = mean
+        self.std = std
 
     # assume input is cv2 img for now
     def __call__(self, img, res, input_size):
@@ -379,8 +389,8 @@ class ValTransform:
         if self.legacy:
             img = img[::-1, :, :].copy()
             img /= 255.0
-            img -= np.array([0.485, 0.456, 0.406]).reshape(3, 1, 1)
-            img /= np.array([0.229, 0.224, 0.225]).reshape(3, 1, 1)
+            img -= np.array(self.mean).reshape(3, 1, 1)
+            img /= np.array(self.std).reshape(3, 1, 1)
         return img, np.zeros((1, 5))
 
 class Vid_Val_Transform:
@@ -401,9 +411,11 @@ class Vid_Val_Transform:
         data
     """
 
-    def __init__(self, swap=(2, 0, 1), legacy=False):
+    def __init__(self, swap=(2, 0, 1), legacy=False, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]):
         self.swap = swap
         self.legacy = legacy
+        self.mean = mean
+        self.std = std
 
     # assume input is cv2 img for now
     def __call__(self, img, res, input_size):
@@ -411,8 +423,8 @@ class Vid_Val_Transform:
         if self.legacy:
             img = img[::-1, :, :].copy()
             img /= 255.0
-            img -= np.array([0.485, 0.456, 0.406]).reshape(3, 1, 1)
-            img /= np.array([0.229, 0.224, 0.225]).reshape(3, 1, 1)
+            img -= np.array(self.mean).reshape(3, 1, 1)
+            img /= np.array(self.std).reshape(3, 1, 1)
         boxes = res[:, :4].copy()
         labels = res[:, 4].copy()
         boxes[:,0] *= rx_

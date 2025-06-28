@@ -9,6 +9,8 @@ from .yolo_pafpn import YOLOPAFPN
 import os
 import cv2
 import numpy as np
+import wandb
+from yolox.utils import get_rank
 
 class YOLOX(nn.Module):
     """
@@ -17,7 +19,7 @@ class YOLOX(nn.Module):
     and detection results during test.
     """
 
-    def __init__(self, backbone=None, head=None):
+    def __init__(self, backbone=None, head=None, kwargs=None):
         super().__init__()
         if backbone is None:
             backbone = YOLOPAFPN()
@@ -26,34 +28,44 @@ class YOLOX(nn.Module):
 
         self.backbone = backbone
         self.head = head
+        self.kwargs = kwargs
         self.count = 0
-        self.output_dir = "./YOLOX_Outputs"
 
     def forward(self, x, targets=None):
         # fpn output content features of [dark3, dark4, dark5]
-        if targets is not None and self.count==0:
-            output_dir = f"{self.output_dir}/yolox_inputViz/"
-            os.makedirs(output_dir, exist_ok=True)
-            for i in range(x.shape[0]):
-                img = x[i]
-                img = img.cpu().detach().numpy()
-                img = img.astype('uint8')  # Convert to uint8
-
-                # Convert from (C, H, W) to (H, W, C)
-                img = img.transpose(1, 2, 0)
-                img = np.ascontiguousarray(img)
-                # Draw bounding boxes
-                for j in range(targets[i].shape[0]):
-                    cls, c_x, c_y, w, h = targets[i, j]
-                    c_x, c_y, w, h = map(int, [c_x, c_y, w/2, h/2])
-                    xmin = c_x - w
-                    ymin = c_y - h
-                    xmax = c_x + w
-                    ymax = c_y + h
-                    img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0,0,255), 3)
-
-                # Save the image
-                # cv2.imwrite(os.path.join(output_dir, f"image_{i}.png"), img)
+        if self.count < 10 and get_rank() == 0 and targets is not None:
+            # log the first image
+            img = x[0]
+            img = img.cpu().detach().numpy()
+            
+            # Undo legacy preprocessing if needed
+            # Legacy preprocessing: img = img[::-1, :, :].copy() / 255.0 - mean / std
+            # So we need to: (img * std + mean) * 255.0
+            if self.kwargs['legacy']:
+                # Reverse normalization
+                mean = np.array(self.kwargs['mean']).reshape(3, 1, 1)
+                std = np.array(self.kwargs['std']).reshape(3, 1, 1)
+                img = img * std + mean
+                img = img * 255.0
+                # Reverse channel order (RGB to BGR for OpenCV)
+                img = img[::-1, :, :].copy()
+            
+            img = img.astype('uint8')  # Convert to uint8
+            # Convert from (C, H, W) to (H, W, C)
+            img = img.transpose(1, 2, 0)
+            img = np.ascontiguousarray(img)
+            # Draw bounding boxes
+            for j in range(targets[0].shape[0]):
+                cls, c_x, c_y, w, h = targets[0, j]
+                c_x, c_y, w, h = map(int, [c_x, c_y, w/2, h/2])
+                xmin = c_x - w
+                ymin = c_y - h
+                xmax = c_x + w
+                ymax = c_y + h
+                img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0,0,255), 1)
+            # Log the image
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            wandb.log({f"inputs/{self.count}": wandb.Image(img)})
             self.count += 1
 
         fpn_outs = self.backbone(x)
