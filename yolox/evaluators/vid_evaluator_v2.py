@@ -115,6 +115,9 @@ class VIDEvaluator:
         self.tmp_name_refined = './refined_pred.json'
         self.gt_ori = './gt_ori.json'
         self.gt_refined = './gt_refined.json'
+        self.ann_to_attr = {}
+        for ann in self.dataloader.dataset.coco.dataset["annotations"]:
+            self.ann_to_attr[ann['id']] = ann['attributes']
         self.img_id_to_name = {v:k for k,v in self.dataloader.dataset.name_id_dic.items()}
 
     def visualize_inferences(self, imgs, label, outputs):
@@ -190,7 +193,7 @@ class VIDEvaluator:
         nms_time = 0
         n_samples = max(len(self.dataloader) - 1, 1)
 
-        for cur_iter, (imgs, _, info_imgs, label, path, time_embedding) in enumerate(
+        for cur_iter, (imgs, _, info_imgs, label, path, attributes) in enumerate(
                 progress_bar(self.dataloader)
         ):
             with torch.no_grad():
@@ -218,7 +221,7 @@ class VIDEvaluator:
             if cur_iter == 0 and get_rank() == 0:
                 self.visualize_inferences(imgs, label, outputs)
 
-            temp_data_list, temp_label_list = self.convert_to_coco_format(outputs, info_imgs, copy.deepcopy(label), path)
+            temp_data_list, temp_label_list = self.convert_to_coco_format(outputs, info_imgs, copy.deepcopy(label), path, attributes)
             data_list.extend(temp_data_list) #preds
             labels_list.extend(temp_label_list) #gts
 
@@ -236,13 +239,13 @@ class VIDEvaluator:
         self.vid_to_coco['annotations'] = []
         return eval_results
 
-    def convert_to_coco_format(self, outputs, info_imgs, labels, paths):
+    def convert_to_coco_format(self, outputs, info_imgs, labels, paths, attributes):
         data_list = []
         label_list = []
         frame_now = 0
 
-        for (output, info_img, _label, path) in zip(
-                outputs, info_imgs, labels, paths
+        for (output, info_img, _label, path, attribute) in zip(
+                outputs, info_imgs, labels, paths, attributes
         ):
             # if frame_now>=self.lframe: break
             scale = min(
@@ -261,7 +264,8 @@ class VIDEvaluator:
                     "segmentation": [],
                     'id': self.box_id,
                     "iscrowd": 0,
-                    'area': int(bboxes_label[ind][2] * bboxes_label[ind][3])
+                    'area': int(bboxes_label[ind][2] * bboxes_label[ind][3]),
+                    "attributes": attribute[ind],
                 }  # COCO json format
                 self.box_id = self.box_id + 1
                 label_list.append(label_pred_data)

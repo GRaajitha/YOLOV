@@ -490,7 +490,7 @@ class OVIS(Arg_VID):
         anno_ids = self.coco.getAnnIds(imgIds=[int(id_)], iscrowd=False)
         annotations = self.coco.loadAnns(anno_ids)
         objs = []
-
+        attributes = []
         for obj in annotations:
             x1 = max(0, obj["bbox"][0])
             y1 = max(0, obj["bbox"][1])
@@ -500,6 +500,7 @@ class OVIS(Arg_VID):
             if obj["area"] > 0 and x2 >= x1 and y2 >= y1:
                 obj["clean_bbox"] = [x1, y1, x2, y2]
                 objs.append(obj)
+                attributes.append(obj["attributes"])
 
         num_objs = len(objs)
         res = np.zeros((num_objs, 5))
@@ -525,8 +526,7 @@ class OVIS(Arg_VID):
             if "name" in im_ann
             else "{:012}".format(id_) + ".jpg"
         )
-
-        return res, img_info, resized_info, file_name
+        return res, img_info, resized_info, file_name, attributes
 
 
     def photo_to_sequence(self,lframe,gframe):
@@ -605,7 +605,7 @@ class OVIS(Arg_VID):
                     img_id (int): same as the input index. Used for evaluation.
                 """
         idx = self.name_id_dic[path]
-        annos, img_info, resized_info, img_path = self.annotations[idx]
+        annos, img_info, resized_info, img_path, attributes = self.annotations[idx]
         abs_path = os.path.join(self.data_dir,self.name, img_path)
         img = cv2.imread(abs_path)
 
@@ -618,7 +618,13 @@ class OVIS(Arg_VID):
         #     (int(img.shape[1] * r), int(img.shape[0] * r)),
         #     interpolation=cv2.INTER_LINEAR,
         # ).astype(np.uint8)
-        return img, annos.copy(), img_info, img_path
+        return img, annos.copy(), img_info, img_path, attributes
+
+    def __getitem__(self, path):
+        img, target, img_info, path, attributes = self.pull_item(path)
+        if self.preproc is not None:
+            img, target = self.preproc(img, target, self.input_dim)
+        return img, target, img_info, path, attributes
 
 
 
@@ -718,6 +724,7 @@ def collate_fn(batch):
     tar_ori = []
     path = []
     path_sequence = []
+    attributes = []
     for sample in batch:
         tar_tensor = torch.zeros([120,5])
         imgs.append(torch.tensor(sample[0]))
@@ -726,10 +733,11 @@ def collate_fn(batch):
         tar.append(tar_tensor)
         ims_info.append(sample[2])
         path.append(sample[3])
+        attributes.append(sample[4])
         #path_sequence.append(int(sample[3][sample[3].rfind('/')+1:sample[3].rfind('.')]))
     # path_sequence= torch.tensor(path_sequence)
     # time_embedding = get_timing_signal_1d(path_sequence,256)
-    return torch.stack(imgs),torch.stack(tar),ims_info,tar_ori,path,None
+    return torch.stack(imgs),torch.stack(tar),ims_info,tar_ori,path,attributes
 
 def get_vid_loader(batch_size,data_num_workers,dataset):
     sampler = VIDBatchSampler(TrainSampler(dataset), batch_size, drop_last=False)

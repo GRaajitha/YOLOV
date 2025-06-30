@@ -20,9 +20,9 @@ class Exp(MyExp):
         # Define yourself dataset path
         self.num_classes = 8  
         self.data_dir = "/shared/vision/dataset/"
-        self.train_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_train_split_video_sequences.json"
-        self.val_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_val_split_video_sequences.json"
-        self.test_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_test_split_video_sequences.json"
+        self.train_ann = "/shared/vision/dataset/metadata/v7_8_cls/coco_vid/trimmed1000_64-500seq_train_coco_vid_06_06.json"
+        self.val_ann = "/shared/vision/dataset/metadata/v7_8_cls/coco_vid/trimmed1000_64-500seq_test_coco_vid_06_06.json"
+        self.test_ann = "/shared/vision/dataset/metadata/v7_8_cls/coco_vid/trimmed1000_64-500seq_test_coco_vid_06_06.json"
         self.input_size = (1080, 1920)
         self.test_size = (1080, 1920)
 
@@ -45,7 +45,7 @@ class Exp(MyExp):
         self.loc_fuse_type = 'identity'
         # self.output_dir = "./V++_outputs"
         cur_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-        self.wandb_name = f"yolov++_swin_tiny_uniform_w_stride{self.seq_stride}_gframe{self.gframe}_8cls_2kinp_trimmed1000_fixedlen_02_26_split_vid_20ep_{cur_time}"
+        self.wandb_name = f"yolov++_base_x_s_test_w_attributes_stride8_gframe4_8cls_2kinp_trimmed1000_64-500seq_test_coco_vid_06_06"
         self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/{self.wandb_name}"
         self.stem_lr_ratio = 0.1
         self.ota_mode = True

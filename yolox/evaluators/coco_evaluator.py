@@ -268,7 +268,8 @@ def evaluate_per_attribute_per_class(cocoGt, cocoDt, cat_names, attribute_names=
                     ann_copy = ann.copy()
                     ann_copy['category_id'] = int(ann_copy['category_id'])
                     ann_copy['image_id'] = int(ann_copy['image_id'])
-                    ann_copy["clean_bbox"] = [int(val) for val in ann_copy["clean_bbox"]]
+                    if "clean_bbox" in ann_copy:
+                        ann_copy["clean_bbox"] = [int(val) for val in ann_copy["clean_bbox"]]
                     filtered_gt_anns_fixed.append(ann_copy)
                 
                 # Prepare detection annotations (only essential fields)
@@ -376,6 +377,7 @@ def evaluate_per_attribute_per_class(cocoGt, cocoDt, cat_names, attribute_names=
                 
             except Exception as e:
                 logger.warning(f"Error evaluating {attr_name}_{attr_val}: {e}")
+                import pdb; pdb.set_trace()
                 continue
         
         results[attr_name] = attr_results
