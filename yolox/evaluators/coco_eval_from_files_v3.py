@@ -172,8 +172,7 @@ wandb.log({
     "val/COCOAP50": ap50,
     "val/COCOAP50_95": ap50_95,
 })
-# attribute_names = ["horizon", "occlusion", "clipping", "primary_terrain", "secondary_terrain", "terrain_modifier", "low_visibility", "annotated_weather", "cloud_coverage", "intruder_lateral_view", "intruder_vertical_view", "image_quality"]
-attribute_names = ["horizon", "occlusion"]
+attribute_names = ["horizon", "size_cat", "occlusion", "clipping", "primary_terrain", "secondary_terrain", "terrain_modifier", "low_visibility", "annotated_weather", "cloud_coverage", "intruder_lateral_view", "intruder_vertical_view", "image_quality"]
 
 attr_results = evaluate_per_attribute_per_class(cocoGt, cocoDt, cat_names, attribute_names=attribute_names)
 log_per_attribute_per_class_metrics(attr_results, iouThrs=[0.5])

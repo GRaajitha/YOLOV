@@ -15,14 +15,14 @@ class Exp(MyExp):
         # Define yourself dataset path
         self.num_classes = 8  
         self.data_dir = "/shared/vision/dataset/"
-        self.train_ann = "metadata/v7_8_cls/train_annotations_coco_fmt.json"
-        self.val_ann = "metadata/v7_8_cls/val_annotations_coco_fmt.json"
-        self.test_ann = "metadata/v7_8_cls/test_annotations_coco_fmt.json"
+        self.train_ann = "metadata/v7_8_cls/coco_vid/trimmed1000_64-500seq_train_coco_vid_06_06.json"
+        self.val_ann = "metadata/v7_8_cls/coco_vid/trimmed1000_64-500seq_test_coco_vid_06_06.json"
+        self.test_ann = "metadata/v7_8_cls/coco_vid/trimmed1000_64-500seq_test_coco_vid_06_06.json"
         self.input_size = (1080, 1920)
         self.test_size = (1080, 1920)
         self.train_name = ''
         self.val_name = ''
-        self.wandb_name = f"yoloxs_v7_8cls_1080x1920_20ep_{date.today()}"
+        self.wandb_name = f"test_yolox_s_v7_8_cls_1080x1920_20ep_{date.today()}_trimmed100_fixedlen_02_27_test_split_video_sequences.json"
         self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/{self.wandb_name}"
 
         self.max_epoch = 20
@@ -45,7 +45,7 @@ class Exp(MyExp):
         self.per_class_AP=True
         self.per_class_AR=True
         self.per_attribute_per_class=True
-        self.attribute_names=["horizon", "occlusion", "clipping", "primary_terrain", "secondary_terrain", "terrain_modifier", "low_visibility", "annotated_weather", "cloud_coverage", "intruder_lateral_view", "intruder_vertical_view", "image_quality"]
+        self.attribute_names=["horizon", "size_cat", "occlusion", "clipping", "primary_terrain", "secondary_terrain", "terrain_modifier", "low_visibility", "annotated_weather", "cloud_coverage", "intruder_lateral_view", "intruder_vertical_view", "image_quality"]
     
     def get_optimizer(self, batch_size):
         if "optimizer" not in self.__dict__:

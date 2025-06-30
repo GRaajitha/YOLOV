@@ -24,7 +24,6 @@ from yolox.utils import (
     setup_logger
 )
 
-
 def make_parser():
     parser = argparse.ArgumentParser("YOLOX Eval")
     parser.add_argument("-expn", "--experiment-name", type=str, default=None)
@@ -192,7 +191,7 @@ def main(exp, args, num_gpu):
         trt_file = None
         decoder = None
 
-    wandb.init(project="YOLOV-tools", name=f"attribute_metrics_test_yolox_{args.experiment_name}_{date.today()}")
+    wandb.init(project="YOLOV-tools", name=exp.wandb_name)
 
     # start evaluate
     ap50_95, ap50, summary = evaluator.evaluate(
@@ -203,6 +202,10 @@ def main(exp, args, num_gpu):
         "val/COCOAP50_95": ap50_95,
     })
     logger.info("\n" + summary)
+    wandb.log({
+        "val/COCOAP50": ap50,
+        "val/COCOAP50_95": ap50_95,
+    })
 
 
 if __name__ == "__main__":

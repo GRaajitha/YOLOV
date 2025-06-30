@@ -466,6 +466,7 @@ class COCOEvaluator:
         fg_AR_only: bool = False,
         per_attribute_per_class: bool = False,
         attribute_names: list = None,
+        output_dir: str = "./"
     ):
         """
         Args:
@@ -492,6 +493,8 @@ class COCOEvaluator:
         self.per_attribute_per_class = per_attribute_per_class
         self.attribute_names = attribute_names
         self.max_epoch_id = max_epoch-1
+        self.output_dir = output_dir
+        self.inference_json = f"{self.output_dir}/refined_pred.json"
 
     def evaluate(
         self,
@@ -572,7 +575,7 @@ class COCOEvaluator:
 
             #vizualize
             if cur_iter == 0:
-                output_dir = "./YOLOX_Outputs/eval_viz"
+                output_dir = f"{self.output_dir}/eval_viz"
                 os.makedirs(output_dir, exist_ok=True)
                 for i in range(imgs.shape[0]):
                     img = imgs[i]
@@ -682,9 +685,8 @@ class COCOEvaluator:
                 json.dump(data_dict, open("./yolox_testdev_2017.json", "w"))
                 cocoDt = cocoGt.loadRes("./yolox_testdev_2017.json")
             else:
-                _, tmp = tempfile.mkstemp()
-                json.dump(data_dict, open(tmp, "w"))
-                cocoDt = cocoGt.loadRes(tmp)
+                json.dump(data_dict, open(self.inference_json, "w"))
+                cocoDt = cocoGt.loadRes(self.inference_json)
             # try:
             #     from yolox.layers import COCOeval_opt as COCOeval
             # except ImportError:

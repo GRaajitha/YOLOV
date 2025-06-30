@@ -204,6 +204,14 @@ class Exp(BaseExp):
         self.test_conf = 0.001
         # nms threshold
         self.nmsthre = 0.5
+        
+        # ---------------- evaluation config ------------------ #
+        # per class AP and AR metrics
+        self.per_class_AP = False
+        self.per_class_AR = False
+        # per attribute per class metrics
+        self.per_attribute_per_class = False
+        self.attribute_names = None  # List of attribute names to evaluate. If None, auto-detect from annotations.
 
     def get_model(self):
         # rewrite get model func from yolox
@@ -456,6 +464,11 @@ class Exp(BaseExp):
             gframe=self.gframe_val,
             first_only = False,
             max_epoch=self.max_epoch,
+            output_dir=self.output_dir,
+            per_class_AP=self.per_class_AP,
+            per_class_AR=self.per_class_AR,
+            per_attribute_per_class=self.per_attribute_per_class,
+            attribute_names=self.attribute_names,
         )
         return evaluator
 

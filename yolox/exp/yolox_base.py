@@ -330,6 +330,7 @@ class Exp(BaseExp):
             per_class_AR=self.per_class_AR,
             per_attribute_per_class=self.per_attribute_per_class,
             attribute_names=self.attribute_names,
+            output_dir=self.output_dir
         )
         return evaluator
 

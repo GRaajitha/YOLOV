@@ -45,7 +45,7 @@ class Exp(MyExp):
         self.loc_fuse_type = 'identity'
         # self.output_dir = "./V++_outputs"
         cur_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-        self.wandb_name = f"yolov++_base_x_s_test_w_attributes_stride8_gframe4_8cls_2kinp_trimmed1000_64-500seq_test_coco_vid_06_06"
+        self.wandb_name = f"test_yolov++_base_x_s_uniform_w_stride8_gframe4_8cls_2kinp_trimmed1000_64-500seq_{cur_time}"
         self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/{self.wandb_name}"
         self.stem_lr_ratio = 0.1
         self.ota_mode = True
