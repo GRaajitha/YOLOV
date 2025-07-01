@@ -22,7 +22,7 @@ class Exp(MyExp):
         self.test_size = (1080, 1920)
         self.train_name = ''
         self.val_name = ''
-        self.wandb_name = f"test_yolox_nano_v7_8_cls_1080x1920_20ep_{date.today()}_trimmed100_fixedlen_02_27_test_split_video_sequences.json"
+        self.wandb_name = f"test_w_attributes_yolox_nano_v7_8_cls_1080x1920_20ep_{date.today()}_trimmed1000_64-500seq_test_coco_vid_06_06.json"
         self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/{self.wandb_name}"
 
         self.max_epoch = 20

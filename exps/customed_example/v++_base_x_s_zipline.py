@@ -45,7 +45,7 @@ class Exp(MyExp):
         self.loc_fuse_type = 'identity'
         # self.output_dir = "./V++_outputs"
         cur_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-        self.wandb_name = f"test_yolov++_base_x_s_uniform_w_stride8_gframe4_8cls_2kinp_trimmed1000_64-500seq_{cur_time}"
+        self.wandb_name = f"test_w_attributes_yolov++_base_x_s_uniform_w_stride8_gframe4_8cls_2kinp_trimmed1000_64-500seq_{cur_time}"
         self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/{self.wandb_name}"
         self.stem_lr_ratio = 0.1
         self.ota_mode = True
@@ -66,6 +66,11 @@ class Exp(MyExp):
         self.defualt_pre=100
         self.backbone_only = False
         self.head_only = False
+        # metrics
+        self.per_class_AP=True
+        self.per_class_AR=True
+        self.per_attribute_per_class=True
+        self.attribute_names=["horizon", "size_cat", "occlusion", "clipping", "primary_terrain", "secondary_terrain", "terrain_modifier", "low_visibility", "annotated_weather", "cloud_coverage", "intruder_lateral_view", "intruder_vertical_view", "image_quality"]
 
     def get_model(self):
         # rewrite get model func from yolox
