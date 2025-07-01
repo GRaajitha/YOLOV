@@ -17,17 +17,18 @@ class YOLOX(nn.Module):
     and detection results during test.
     """
 
-    def __init__(self, backbone=None, head=None):
+    def __init__(self, backbone=None, head=None, num_classes=30, onnx_export=False):
         super().__init__()
         if backbone is None:
             backbone = YOLOPAFPN()
         if head is None:
-            head = YOLOXHead(16)
+            head = YOLOXHead(num_classes)
 
         self.backbone = backbone
         self.head = head
         self.count = 0
         self.output_dir = "./YOLOX_Outputs"
+        self.onnx_export = onnx_export
 
     def forward(self, x, targets=None):
         # fpn output content features of [dark3, dark4, dark5]
@@ -72,6 +73,6 @@ class YOLOX(nn.Module):
                 "num_fg": num_fg,
             }
         else:
-            outputs = self.head(fpn_outs)
+            outputs = self.head(fpn_outs, onnx_export=self.onnx_export)
 
         return outputs
