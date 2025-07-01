@@ -13,7 +13,7 @@ from yolox.utils import bboxes_iou, meshgrid
 
 from .losses import IOUloss
 from .network_blocks import BaseConv, DWConv
-from yolox.models.post_process import postprocess_widx,find_features
+from yolox.models.post_process import postprocess_widx,find_features, postprocess_widx_onnx
 
 class YOLOXHead(nn.Module):
     def __init__(
@@ -142,7 +142,7 @@ class YOLOXHead(nn.Module):
             b.data.fill_(-math.log((1 - prior_prob) / prior_prob))
             conv.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
 
-    def forward(self, xin, labels=None, imgs=None):
+    def forward(self, xin, labels=None, imgs=None, onnx_export=False):
         outputs = []
         origin_preds = []
         x_shifts = []
@@ -211,6 +211,10 @@ class YOLOXHead(nn.Module):
             outputs = torch.cat(
                 [x.flatten(start_dim=2) for x in outputs], dim=2
             ).permute(0, 2, 1)
+            if onnx_export:
+                decoded_outputs = self.decode_outputs(outputs, dtype=xin[0].type())
+                post_processed_outputs, _ = postprocess_widx_onnx(decoded_outputs)
+                return post_processed_outputs
             if self.debug:
                 decode_res = self.decode_outputs(outputs, dtype=xin[0].type())
                 res_post,res_idx = postprocess_widx(decode_res)
