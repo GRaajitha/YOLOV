@@ -16,13 +16,13 @@ class Exp(MyExp):
         self.num_classes = 8  
         self.data_dir = "/shared/vision/dataset/"
         self.train_ann = "metadata/v7_8_cls/coco_vid/trimmed1000_64-500seq_train_coco_vid_06_06.json"
-        self.val_ann = "metadata/v7_8_cls/coco_vid/trimmed1000_64-500seq_test_coco_vid_06_06.json"
+        self.val_ann = "metadata/v7_8_cls/coco_vid/trimmed1000_64-500seq_val_coco_vid_06_06.json"
         self.test_ann = "metadata/v7_8_cls/coco_vid/trimmed1000_64-500seq_test_coco_vid_06_06.json"
         self.input_size = (1080, 1920)
         self.test_size = (1080, 1920)
         self.train_name = ''
         self.val_name = ''
-        self.wandb_name = f"test_w_attributes_yolox_s_v7_8_cls_1080x1920_20ep_{date.today()}_trimmed1000_64-500seq_test_coco_vid_06_06.json"
+        self.wandb_name = f"yoloxs_v7_8cls_1080x1920_20ep_trimmed1000_64-500seq_{date.today()}"
         self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/{self.wandb_name}"
 
         self.max_epoch = 20
@@ -46,7 +46,8 @@ class Exp(MyExp):
         self.per_class_AR=True
         self.per_attribute_per_class=True
         self.attribute_names=["horizon", "size_cat", "occlusion", "clipping", "primary_terrain", "secondary_terrain", "terrain_modifier", "low_visibility", "annotated_weather", "cloud_coverage", "intruder_lateral_view", "intruder_vertical_view", "image_quality"]
-    
+        #ONNX export
+        self.onnx_export = False
     def get_optimizer(self, batch_size):
         if "optimizer" not in self.__dict__:
             if self.warmup_epochs > 0:

@@ -191,7 +191,7 @@ def main(exp, args, num_gpu):
         trt_file = None
         decoder = None
 
-    wandb.init(project="YOLOV-tools", name=exp.wandb_name)
+    wandb.init(project="YOLOV-tools", name=f"eval_{exp.wandb_name}")
 
     # start evaluate
     ap50_95, ap50, summary = evaluator.evaluate(

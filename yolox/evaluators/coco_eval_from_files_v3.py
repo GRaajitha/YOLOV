@@ -65,15 +65,14 @@ def plot_pr_curve(cocoEval, iou_threshold, output_filename):
 
 
 # Define file paths
-gt_file = "/shared/users/raajitha/YOLOVexperiments/test_yolov++_base_x_s_uniform_w_stride8_gframe4_8cls_2kinp_trimmed1000_64-500seq_test_coco_vid_06_06_2025_06_18_18_43_15/gt_refined.json"
-dt_file = "/shared/users/raajitha/YOLOVexperiments/test_yolov++_base_x_s_uniform_w_stride8_gframe4_8cls_2kinp_trimmed1000_64-500seq_test_coco_vid_06_06_2025_06_18_18_43_15/refined_pred.json"
-wandb_name = "test_w_attributes_yolov++_base_x_s_stride8_gframe4_8cls_2kinp_trimmed1000_64-500seq_test_coco_vid_06_06"
+gt_file = "/shared/vision/dataset/metadata/v7_8_cls/coco_vid/trimmed1000_64-500seq_test_coco_vid_06_06.json"
+dt_file = "/shared/users/raajitha/YOLOVexperiments/test_yolox_nano_v7_8_cls_1080x1920_20ep_2025-06-16_trimmed100_fixedlen_02_27_test_split_video_sequences.json/refined_pred.json"
+wandb_name = "test_w_attributes_yolox_nano_v7_8_cls_1080x1920_20ep_2025-05-22_trimmed1000_64-500seq_test_coco_vid_06_06"
 
 # Load data
 gt_data = json.load(open(gt_file, "r"))
 dt_data = json.load(open(dt_file, "r"))
 
-import pdb; pdb.set_trace()
 # Add iscrowd and area fields to ground truth annotations
 for ann in gt_data["annotations"]:
     if 'iscrowd' not in ann:
@@ -144,7 +143,6 @@ cocoEval.params.catIds = sorted(cocoGt.getCatIds())
 # Run evaluation
 cocoEval.evaluate()
 cocoEval.accumulate()
-# plot_pr_curve(cocoEval, iou_threshold=0.5, output_filename='precision_recall_curve_iou0.5.png')
 
 # Generate output
 redirect_string = io.StringIO()

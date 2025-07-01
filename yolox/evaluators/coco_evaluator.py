@@ -377,7 +377,6 @@ def evaluate_per_attribute_per_class(cocoGt, cocoDt, cat_names, attribute_names=
                 
             except Exception as e:
                 logger.warning(f"Error evaluating {attr_name}_{attr_val}: {e}")
-                import pdb; pdb.set_trace()
                 continue
         
         results[attr_name] = attr_results
@@ -575,8 +574,6 @@ class COCOEvaluator:
 
             #vizualize
             if cur_iter == 0:
-                output_dir = f"{self.output_dir}/eval_viz"
-                os.makedirs(output_dir, exist_ok=True)
                 for i in range(imgs.shape[0]):
                     img = imgs[i]
                     img = img.cpu().detach().numpy()
@@ -592,12 +589,8 @@ class COCOEvaluator:
                             xmin, ymin, xmax, ymax = map(int, [xmin, ymin, xmax, ymax])
                             score = obj_score * cls_score
                             score = round(score.item(), 3)
-                            #if score > 0.001:
                             img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0,0,255), 3)
-                        # img = cv2.putText(img, str(f"{cls.item()}_{score}"), (xmin+5, ymin+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2)
-
                     # log the image
-                    # cv2.imwrite(f"{output_dir}/image_{i}.png", img)
                     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                     wandb.log({f"inferences/{i}": wandb.Image(img)})
 
