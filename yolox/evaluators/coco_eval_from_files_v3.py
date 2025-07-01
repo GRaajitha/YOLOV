@@ -4,7 +4,7 @@ import numpy as np
 import io
 import contextlib
 import json
-from yolox.evaluators.coco_evaluator import per_class_AR_table, per_class_AP_table, evaluate_per_attribute_per_class, log_per_attribute_per_class_metrics
+from yolox.evaluators.coco_evaluator import log_pr_curve, per_class_AR_table, per_class_AP_table, evaluate_per_attribute_per_class, log_per_attribute_per_class_metrics
 import tempfile
 import os
 import matplotlib.pyplot as plt
@@ -65,8 +65,9 @@ def plot_pr_curve(cocoEval, iou_threshold, output_filename):
 
 
 # Define file paths
-gt_file = "/shared/vision/experiments/vision-detector/full_test_raajitha_v7_8_cls_2025-04-17_23-15-30_ovis_v7_trimmed1000_64-500seq_test_coco_vid_06_06/test_gt_coco_fmt.json"
-dt_file = "/shared/vision/experiments/vision-detector/full_test_raajitha_v7_8_cls_2025-04-17_23-15-30_ovis_v7_trimmed1000_64-500seq_test_coco_vid_06_06/test_inference_results.json"
+gt_file = "/shared/vision/dataset/metadata/v7_8_cls/coco_vid/trimmed1000_64-500seq_test_coco_vid_06_06.json"
+dt_file = "/shared/users/raajitha/YOLOVexperiments/test_yolox_nano_v7_8_cls_1080x1920_20ep_2025-06-16_trimmed100_fixedlen_02_27_test_split_video_sequences.json/refined_pred.json"
+wandb_name = "test_w_attributes_yolox_nano_v7_8_cls_1080x1920_20ep_2025-05-22_trimmed1000_64-500seq_test_coco_vid_06_06"
 
 # Load data
 gt_data = json.load(open(gt_file, "r"))
@@ -142,7 +143,6 @@ cocoEval.params.catIds = sorted(cocoGt.getCatIds())
 # Run evaluation
 cocoEval.evaluate()
 cocoEval.accumulate()
-plot_pr_curve(cocoEval, iou_threshold=0.5, output_filename='precision_recall_curve_iou0.5.png')
 
 # Generate output
 redirect_string = io.StringIO()
@@ -151,7 +151,7 @@ with contextlib.redirect_stdout(redirect_string):
     cocoEval.summarize(compute_confidence_matrix=True)
 info += redirect_string.getvalue()
 
-wandb.init(project="YOLOV-tools", name="test_attribute_metrics")
+wandb.init(project="YOLOV-tools", name=wandb_name)
 cat_ids = list(cocoGt.cats.keys())
 cat_names = [cocoGt.cats[catId]['name'] for catId in sorted(cat_ids)]
 AP_table, per_class_AP = per_class_AP_table(cocoEval, class_names=cat_names)
@@ -161,6 +161,8 @@ AR_table, per_class_AR = per_class_AR_table(cocoEval, class_names=cat_names)
 wandb.log({f"val/mAR_{name}":value/100 for name, value in per_class_AR.items()})
 info += "per class AR:\n" + AR_table + "\n"
 
+log_pr_curve(cocoEval, iou_threshold=0.5)
+
 print(cocoEval.stats[0], cocoEval.stats[1], info, cocoEval.conf_matrix)
 
 ap50_95, ap50 =cocoEval.stats[0], cocoEval.stats[1]
@@ -168,8 +170,7 @@ wandb.log({
     "val/COCOAP50": ap50,
     "val/COCOAP50_95": ap50_95,
 })
-# attribute_names = ["horizon", "occlusion", "clipping", "primary_terrain", "secondary_terrain", "terrain_modifier", "low_visibility", "annotated_weather", "cloud_coverage", "intruder_lateral_view", "intruder_vertical_view", "image_quality"]
-attribute_names = ["horizon", "occlusion"]
+attribute_names = ["horizon", "size_cat", "occlusion", "clipping", "primary_terrain", "secondary_terrain", "terrain_modifier", "low_visibility", "annotated_weather", "cloud_coverage", "intruder_lateral_view", "intruder_vertical_view", "image_quality"]
 
 attr_results = evaluate_per_attribute_per_class(cocoGt, cocoDt, cat_names, attribute_names=attribute_names)
 log_per_attribute_per_class_metrics(attr_results, iouThrs=[0.5])

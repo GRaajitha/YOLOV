@@ -20,9 +20,9 @@ class Exp(MyExp):
         # Define yourself dataset path
         self.num_classes = 8  
         self.data_dir = "/shared/vision/dataset/"
-        self.train_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_train_split_video_sequences.json"
-        self.val_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_val_split_video_sequences.json"
-        self.test_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_test_split_video_sequences.json"
+        self.train_ann = "/shared/vision/dataset/metadata/v7_8_cls/coco_vid/trimmed1000_64-500seq_train_coco_vid_06_06.json"
+        self.val_ann = "/shared/vision/dataset/metadata/v7_8_cls/coco_vid/trimmed1000_64-500seq_val_coco_vid_06_06.json"
+        self.test_ann = "/shared/vision/dataset/metadata/v7_8_cls/coco_vid/trimmed1000_64-500seq_test_coco_vid_06_06.json"
         self.input_size = (1080, 1920)
         self.test_size = (1080, 1920)
 
@@ -45,7 +45,7 @@ class Exp(MyExp):
         self.loc_fuse_type = 'identity'
         # self.output_dir = "./V++_outputs"
         cur_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-        self.wandb_name = f"yolov++_yoloxnano_uniform_w_stride{self.seq_stride}_gframe{self.gframe}_8cls_2kinp_trim100_fixedlen_02_27_split_vid_20ep_{cur_time}"
+        self.wandb_name = f"yolov++_base_x_nano_{self.seq_stride}_gframe{self.gframe}_8cls_2kinp_trimmed1000_64-500seq_06_06_{cur_time}"
         self.output_dir = f"/shared/users/raajitha/YOLOVexperiments/{self.wandb_name}"
         self.stem_lr_ratio = 0.1
         self.ota_mode = True
@@ -66,6 +66,11 @@ class Exp(MyExp):
         self.defualt_pre=100
         self.backbone_only = False
         self.head_only = False
+        # metrics
+        self.per_class_AP=True
+        self.per_class_AR=True
+        self.per_attribute_per_class=True
+        self.attribute_names=["horizon", "size_cat", "occlusion", "clipping", "primary_terrain", "secondary_terrain", "terrain_modifier", "low_visibility", "annotated_weather", "cloud_coverage", "intruder_lateral_view", "intruder_vertical_view", "image_quality"]
 
     def get_model(self):
         # rewrite get model func from yolox

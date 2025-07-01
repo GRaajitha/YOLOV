@@ -11,7 +11,14 @@ import tempfile
 import time
 from loguru import logger
 from tqdm import tqdm
-from yolox.evaluators.coco_evaluator import per_class_AR_table, per_class_AP_table, log_pr_curve, log_confusion_matrix
+from yolox.evaluators.coco_evaluator import (
+    per_class_AR_table, 
+    per_class_AP_table, 
+    log_pr_curve, 
+    log_confusion_matrix,
+    evaluate_per_attribute_per_class,
+    log_per_attribute_per_class_metrics
+)
 import torch
 import pycocotools.coco
 import os
@@ -19,6 +26,7 @@ import numpy as np
 import cv2
 import wandb
 import matplotlib.pyplot as plt
+from yolox.data.datasets.vid_classes import VID_classes
 
 from yolox.utils import (
     gather,
@@ -30,20 +38,6 @@ from yolox.utils import (
     get_rank
 )
 
-vid_classes = (
-    "Airplane",
-    "Paraglider",
-    "Helicopter",
-    "Zip",
-    "Ultralight",
-    "Glider",
-    "Bird",
-    "Balloon"
-)
-
-
-# from yolox.data.datasets.vid_classes import Arg_classes as  vid_classes
-
 class VIDEvaluator:
     """
     COCO AP Evaluation class.  All the data in the val2017 dataset are processed
@@ -53,7 +47,9 @@ class VIDEvaluator:
     def __init__(
             self, dataloader, img_size, confthre, nmsthre,
             num_classes, max_epoch, testdev=False, gl_mode=False,
-            lframe=0, gframe=32, **kwargs
+            lframe=0, gframe=32, output_dir="./", per_class_AP=False,
+            per_class_AR=False, per_attribute_per_class=False,
+            attribute_names=None, **kwargs
     ):
         """
         Args:
@@ -63,6 +59,10 @@ class VIDEvaluator:
             confthre (float): confidence threshold ranging from 0 to 1, which
                 is defined in the config file.
             nmsthre (float): IoU threshold of non-max supression ranging from 0 to 1.
+            per_class_AP (bool): Show per class AP during evaluation or not. Default to False.
+            per_class_AR (bool): Show per class AR during evaluation or not. Default to False.
+            per_attribute_per_class (bool): Show per attribute per class metrics during evaluation. Default to False.
+            attribute_names (list): List of attribute names to evaluate. If None, auto-detect from annotations.
         """
         self.dataloader = dataloader
         self.img_size = img_size
@@ -77,20 +77,18 @@ class VIDEvaluator:
         self.lframe = lframe
         self.gframe = gframe
         self.max_epoch_id = max_epoch - 1
+        self.output_dir = output_dir
         self.kwargs = kwargs
+        self.per_class_AP = per_class_AP
+        self.per_class_AR = per_class_AR
+        self.per_attribute_per_class = per_attribute_per_class
+        self.attribute_names = attribute_names
         self.vid_to_coco = {
             'info': {
                 'description': 'nothing',
             },
             'annotations': [],
-            'categories': [{'supercategory': 'none', 'id': 0, 'name': 'Airplane'},
-                            {'supercategory': 'none', 'id': 1, 'name': 'Paraglider'},
-                            {'supercategory': 'none', 'id': 2, 'name': 'Helicopter'},
-                            {'supercategory': 'none', 'id': 3, 'name': 'Zip'},
-                            {'supercategory': 'none', 'id': 4, 'name': 'Ultralight'},
-                            {'supercategory': 'none', 'id': 5, 'name': 'Glider'},
-                            {'supercategory': 'none', 'id': 6, 'name': 'Bird'},
-                            {'supercategory': 'none', 'id': 7, 'name': 'Balloon'}],
+            'categories': [{'supercategory': 'none', 'id': i, 'name': VID_classes[i]} for i in range(len(VID_classes))],
             'images': [],
             'licenses': []
         }
@@ -99,22 +97,15 @@ class VIDEvaluator:
                 'description': 'nothing',
             },
             'annotations': [],
-            'categories': [{'supercategory': 'none', 'id': 0, 'name': 'Airplane'},
-                            {'supercategory': 'none', 'id': 1, 'name': 'Paraglider'},
-                            {'supercategory': 'none', 'id': 2, 'name': 'Helicopter'},
-                            {'supercategory': 'none', 'id': 3, 'name': 'Zip'},
-                            {'supercategory': 'none', 'id': 4, 'name': 'Ultralight'},
-                            {'supercategory': 'none', 'id': 5, 'name': 'Glider'},
-                            {'supercategory': 'none', 'id': 6, 'name': 'Bird'},
-                            {'supercategory': 'none', 'id': 7, 'name': 'Balloon'}],
+            'categories': [{'supercategory': 'none', 'id': i, 'name': VID_classes[i]} for i in range(len(VID_classes))],
             'images': [],
             'licenses': []
         }
         self.testdev = testdev
-        self.tmp_name_ori = './ori_pred.json'
-        self.tmp_name_refined = './refined_pred.json'
-        self.gt_ori = './gt_ori.json'
-        self.gt_refined = './gt_refined.json'
+        self.tmp_name_ori = f"{self.output_dir}/ori_pred.json"
+        self.tmp_name_refined = f"{self.output_dir}/refined_pred.json"
+        self.gt_ori = f"{self.output_dir}/gt_ori.json"
+        self.gt_refined = f"{self.output_dir}/gt_refined.json"
         self.img_id_to_name = {v:k for k,v in self.dataloader.dataset.name_id_dic.items()}
 
     def visualize_inferences(self, imgs, label, outputs):
@@ -190,7 +181,7 @@ class VIDEvaluator:
         nms_time = 0
         n_samples = max(len(self.dataloader) - 1, 1)
 
-        for cur_iter, (imgs, _, info_imgs, label, path, time_embedding) in enumerate(
+        for cur_iter, (imgs, _, info_imgs, label, path, attributes) in enumerate(
                 progress_bar(self.dataloader)
         ):
             with torch.no_grad():
@@ -218,7 +209,7 @@ class VIDEvaluator:
             if cur_iter == 0 and get_rank() == 0:
                 self.visualize_inferences(imgs, label, outputs)
 
-            temp_data_list, temp_label_list = self.convert_to_coco_format(outputs, info_imgs, copy.deepcopy(label), path)
+            temp_data_list, temp_label_list = self.convert_to_coco_format(outputs, info_imgs, copy.deepcopy(label), path, attributes)
             data_list.extend(temp_data_list) #preds
             labels_list.extend(temp_label_list) #gts
 
@@ -236,13 +227,13 @@ class VIDEvaluator:
         self.vid_to_coco['annotations'] = []
         return eval_results
 
-    def convert_to_coco_format(self, outputs, info_imgs, labels, paths):
+    def convert_to_coco_format(self, outputs, info_imgs, labels, paths, attributes):
         data_list = []
         label_list = []
         frame_now = 0
 
-        for (output, info_img, _label, path) in zip(
-                outputs, info_imgs, labels, paths
+        for (output, info_img, _label, path, attribute) in zip(
+                outputs, info_imgs, labels, paths, attributes
         ):
             # if frame_now>=self.lframe: break
             scale = min(
@@ -261,7 +252,8 @@ class VIDEvaluator:
                     "segmentation": [],
                     'id': self.box_id,
                     "iscrowd": 0,
-                    'area': int(bboxes_label[ind][2] * bboxes_label[ind][3])
+                    'area': int(bboxes_label[ind][2] * bboxes_label[ind][3]),
+                    "attributes": attribute[ind],
                 }  # COCO json format
                 self.box_id = self.box_id + 1
                 label_list.append(label_pred_data)
@@ -417,15 +409,18 @@ class VIDEvaluator:
 
             cat_ids = list(cocoGt.cats.keys())
             cat_names = [cocoGt.cats[catId]['name'] for catId in sorted(cat_ids)]
-            AP_table, per_class_AP = per_class_AP_table(cocoEval, class_names=cat_names)
-            info += "per class AP:\n" + AP_table + "\n"
+            
+            if self.per_class_AP:
+                AP_table, per_class_AP = per_class_AP_table(cocoEval, class_names=cat_names)
+                info += "per class AP:\n" + AP_table + "\n"
+                if get_rank() == 0:
+                    wandb.log({f"val/mAP_{name}":value/100 for name, value in per_class_AP.items()})
 
-            AR_table, per_class_AR = per_class_AR_table(cocoEval, class_names=cat_names)
-            info += "per class AR:\n" + AR_table + "\n"
-
-            if get_rank() == 0:
-                wandb.log({f"val/mAP_{name}":value/100 for name, value in per_class_AP.items()})
-                wandb.log({f"val/mAR_{name}":value/100 for name, value in per_class_AR.items()})
+            if self.per_class_AR:
+                AR_table, per_class_AR = per_class_AR_table(cocoEval, class_names=cat_names)
+                info += "per class AR:\n" + AR_table + "\n"
+                if get_rank() == 0:
+                    wandb.log({f"val/mAR_{name}":value/100 for name, value in per_class_AR.items()})
             with contextlib.redirect_stdout(redirect_string):
                 cocoEval.summarize(compute_confidence_matrix=epoch==self.max_epoch_id)
             info += redirect_string.getvalue()
@@ -435,6 +430,35 @@ class VIDEvaluator:
                 log_pr_curve(cocoEval, iou_threshold=0.5)
                 # Log confusion matrix
                 log_confusion_matrix(cocoEval, cat_names)
+                
+                # Per-attribute per-class evaluation
+                if self.per_attribute_per_class:
+                    logger.info("Starting per-attribute per-class evaluation...")
+                    try:
+                        # Check if annotations have attributes
+                        has_attributes = False
+                        for ann in cocoGt.anns.values():
+                            if 'attributes' in ann:
+                                has_attributes = True
+                                break
+
+                        if not has_attributes:
+                            logger.warning("No attributes found in annotations. Skipping per-attribute per-class evaluation.")
+                        else:
+                            # Perform per-attribute per-class evaluation
+                            attr_results = evaluate_per_attribute_per_class(
+                                cocoGt, cocoDt, cat_names, self.attribute_names
+                            )
+                            
+                            if attr_results:
+                                # Add summary to info string
+                                info += "\nPer-Attribute Per-Class Results:\n"
+                                log_per_attribute_per_class_metrics(attr_results)
+                            
+                    except Exception as e:
+                        logger.error(f"Error in per-attribute per-class evaluation: {e}")
+                        info += f"\nError in per-attribute per-class evaluation: {e}\n"
+
             
             return cocoEval.stats[0], cocoEval.stats[1], info
         else:

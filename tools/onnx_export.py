@@ -3,7 +3,7 @@ from yolox.exp import get_exp
 import argparse
 import torch
 import cv2
-from yolox.data.data_augment import preproc
+from yolox.data.data_augment import preproc_no_pad
 import onnx
 import numpy as np
 
@@ -119,10 +119,10 @@ def make_inputs(pre_proc_img):
     # rand_img = torch.rand((exp.gframe, 3, exp.input_size[1], exp.input_size[0])).cuda()
     return input
 
-def export_to_onnx(model, output_onnx_file, fpn_dir):
+def export_to_onnx(model, output_onnx_file, fpn_dir, model_input):
     output_names = ["output"]
     input_names = ["input"]
-    inputs = {"x": input}
+    inputs = {"x": model_input}
     if exp.backbone_only:
         output_names = ["fpn_out0", "fpn_out1", "fpn_out2"]
     if exp.head_only:
@@ -163,11 +163,11 @@ if __name__ == "__main__":
 
     # prepare input
     img_cv = cv2.imread("./input_image.png")
-    pre_proc_img, _ = preproc(img_cv, (exp.input_size[0], exp.input_size[1]))
-    input = make_inputs(pre_proc_img)
+    pre_proc_img, _ = preproc_no_pad(img_cv, (exp.input_size[0], exp.input_size[1]))
+    model_input = make_inputs(pre_proc_img)
 
     # Export model to onnx
-    ort_inputs = export_to_onnx(model, output_onnx_file, args.fpn_dir)
+    ort_inputs = export_to_onnx(model, output_onnx_file, args.fpn_dir, model_input)
 
     # load model with onnxruntime and verify outputs
     import onnxruntime as ort
