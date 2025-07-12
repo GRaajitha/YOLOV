@@ -8,6 +8,8 @@ import onnx
 import numpy as np
 import onnxruntime as ort
 
+os.environ["CUDA_VISIBLE_DEVICES"]="7"
+
 def make_parser():
     parser = argparse.ArgumentParser(description="YOLOV ONNX Export Parser")
     parser.add_argument("-f", "--exp_file", default='', type=str, help="Path to experiment description file")
