@@ -20,11 +20,11 @@ class Exp(MyExp):
         # Define yourself dataset path
         self.num_classes = 8  
         self.data_dir = "/shared/vision/dataset/"
-        self.train_ann = "/shared/vision/dataset/metadata/v7_8_cls/coco_vid/trimmed1000_64-500seq_train_coco_vid_06_06.json"
-        self.val_ann = "/shared/vision/dataset/metadata/v7_8_cls/coco_vid/trimmed1000_64-500seq_val_coco_vid_06_06.json"
-        self.test_ann = "/shared/vision/dataset/metadata/v7_8_cls/coco_vid/trimmed1000_64-500seq_test_coco_vid_06_06.json"
-        self.input_size = (1080, 1920)
-        self.test_size = (1080, 1920)
+        self.train_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_train_split_video_sequences.json"
+        self.val_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_val_split_video_sequences.json"
+        self.test_ann = "/shared/vision/dataset/metadata/ovis_v7/trimmed100_fixedlen_02_27_test_split_video_sequences.json"
+        self.input_size = (2160, 3840)
+        self.test_size = (2160, 3840)
 
         self.max_epoch = 20
         self.basic_lr_per_img = 0.001
@@ -59,9 +59,9 @@ class Exp(MyExp):
         
         # onnx_export options
         self.onnx_export=False
-        self.fpn0_shape = (64, 136, 240)
-        self.fpn1_shape = (128, 68, 120)
-        self.fpn2_shape = (256, 34, 60)
+        self.fpn0_shape = (64, 272, 480)
+        self.fpn1_shape = (128, 136, 240)
+        self.fpn2_shape = (256, 68, 120)
         # topk 
         self.defualt_pre=100
         self.backbone_only = False

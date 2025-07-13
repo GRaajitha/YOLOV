@@ -163,7 +163,7 @@ if __name__ == "__main__":
 
     # prepare input
     img_cv = cv2.imread("./input_image.png")
-    pre_proc_img, _ = preproc_no_pad(img_cv, (exp.input_size[0], exp.input_size[1]))
+    pre_proc_img, _, _ = preproc_no_pad(img_cv, (exp.input_size[0], exp.input_size[1]))
     model_input = make_inputs(pre_proc_img)
 
     # Export model to onnx
@@ -181,4 +181,4 @@ if __name__ == "__main__":
     if exp.backbone_only:
         visualize_and_save_fpn_outputs(outputs, args.outdir)
     else:
-        visualize_detections(pre_proc_img, outputs, input.shape, args.outdir)
+        visualize_detections(pre_proc_img, outputs, model_input.shape, args.outdir)
