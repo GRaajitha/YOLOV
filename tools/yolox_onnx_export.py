@@ -39,10 +39,13 @@ def visualize_detections(pre_proc_img, detections, outdir):
     cv2.imwrite(f"{outdir}/preprocessed_input.png", img)
     
     for detection in detections:
-        xmin, ymin, xmax, ymax, obj_score, cls_score, cls = detection[:7]
-        xmin, ymin, xmax, ymax, cls = map(int, [xmin, ymin, xmax, ymax, cls])
-        score = obj_score * cls_score
-        
+        # xmin, ymin, xmax, ymax, obj_score, cls_score, cls = detection[:7]
+        xmin, ymin, xmax, ymax, obj_score = detection[:5]
+        class_scores = detection[5:]
+        xmin, ymin, xmax, ymax = map(int, [xmin, ymin, xmax, ymax])
+        score = obj_score * max(class_scores)
+        cls = np.argmax(class_scores).item()
+
         if score >= 0.5:
             img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), (0, 0, 255), 3)
             img = cv2.putText(
@@ -50,7 +53,7 @@ def visualize_detections(pre_proc_img, detections, outdir):
                 cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2
             )
     
-    output_filename = "onnx_inference_0.5score_thresh.png"
+    output_filename = "onnx_inference.png"
     cv2.imwrite(f"{outdir}/{output_filename}", img)
     print(f"Visualization of inference saved as {output_filename}!")
 

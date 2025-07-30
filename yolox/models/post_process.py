@@ -453,6 +453,7 @@ def postprocess_widx_onnx(prediction, num_classes=30, conf_thre=0.01, nms_thre=0
         # Detections ordered as (x1, y1, x2, y2, obj_conf, class_conf, class_pred)
         detections = torch.cat((image_pred[:, :5], class_conf, class_pred.float()), 1)
         detections = detections[conf_mask]
+        image_pred = image_pred[conf_mask]
         if not detections.size(0):
             continue
 
@@ -462,10 +463,11 @@ def postprocess_widx_onnx(prediction, num_classes=30, conf_thre=0.01, nms_thre=0
 
         keep_idxs = keep_idxs[:, 2].long()
         detections = detections[keep_idxs]
+        image_pred = image_pred[keep_idxs]
         if output[i] is None:
-            output[i] = detections
+            output[i] = image_pred
         else:
-            output[i] = torch.cat((output[i], detections))
+            output[i] = torch.cat((output[i], image_pred))
         output_index[i] = keep_idxs
 
     return output, output_index
